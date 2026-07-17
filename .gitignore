@@ -1,0 +1,30 @@
+# User data & private records
+*.csv
+*.xlsx
+*.tsv
+data/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.staging
+
+# System & Tooling files
+.DS_Store
+Thumbs.db
+node_modules/
+.gemini/
+.agents/
+brain/
+task.md
+implementation_plan.md
+walkthrough.md
+scratch/
+dist/
+build/
+*.zip
+*.pdf
+*.png

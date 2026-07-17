@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Cloud Arcade Facilitator 2026 - Leaderboard Generator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Starfield background -->
+  <div id="starfield"></div>
+
+  <div class="app-container">
+    <header>
+      <div class="brand-subtitle">Google Cloud</div>
+      <h1 class="brand-title">THE ARCADE</h1>
+      <span class="facilitator-tag">LEADERBOARD GENERATOR 2026</span>
+    </header>
+
+    <!-- CSV UPLOAD SECTION -->
+    <div class="upload-container" id="upload-container">
+      <div class="upload-box" id="dropzone">
+        <input type="file" id="csv-file-input" class="file-input" accept=".csv">
+        <span class="upload-icon">🚀</span>
+        <h3 class="upload-title">Unggah Data Leaderboard (.csv)</h3>
+        <p class="upload-text">Seret & lepas berkas CSV Anda di sini, atau klik tombol di bawah ini untuk memilih berkas.</p>
+        <button class="btn" id="browse-btn">PILIH BERKAS</button>
+        <p class="stat-desc" style="margin-top: 15px; font-family: monospace; color: var(--text-muted);">
+          Kolom wajib: Nama Peserta, Jumlah Lencana Keahlian yang diselesaikan, Jumlah Arcade Game yang diselesaikan, Milestone yang diraih, Bonus Milestone yang diraih
+        </p>
+      </div>
+    </div>
+
+    <!-- LEADERBOARD SECTION (HIDDEN BY DEFAULT) -->
+    <div class="leaderboard-section" id="leaderboard-section">
+      
+      <!-- STATS DASHBOARD -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Peserta</div>
+          <div class="stat-value" id="stat-total-participants">0</div>
+          <div class="stat-desc">Peserta terdaftar aktif</div>
+        </div>
+        <div class="stat-card gold">
+          <div class="stat-label">Ultimate Milestone</div>
+          <div class="stat-value" id="stat-ultimate-count">0</div>
+          <div class="stat-desc">Selesai 12 Games & 56 Skills</div>
+        </div>
+        <div class="stat-card pink">
+          <div class="stat-label">GEAR Bonus Earners</div>
+          <div class="stat-value" id="stat-bonus-count">0</div>
+          <div class="stat-desc">Tambahan +10 Bonus Poin</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Rata-rata Poin</div>
+          <div class="stat-value" id="stat-average-points">0</div>
+          <div class="stat-desc">Poin rata-rata peserta</div>
+        </div>
+      </div>
+
+      <!-- CONTROLS & FILTERS -->
+      <div class="controls-card">
+        <div class="controls-grid">
+          <div class="input-group">
+            <span class="input-label">Cari Nama</span>
+            <input type="text" id="search-input" class="form-control" placeholder="Cari nama peserta...">
+          </div>
+          <div class="input-group">
+            <span class="input-label">Filter Milestone</span>
+            <select id="milestone-filter" class="form-control">
+              <option value="all">Semua Milestone</option>
+              <option value="ultimate">Ultimate Milestone</option>
+              <option value="milestone-3">Milestone 3</option>
+              <option value="milestone-2">Milestone 2</option>
+              <option value="milestone-1">Milestone 1</option>
+              <option value="none">Belum Ada Milestone</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <span class="input-label">Filter GEAR Bonus</span>
+            <select id="bonus-filter" class="form-control">
+              <option value="all">Semua Status Bonus</option>
+              <option value="yes">Mendapatkan Bonus (+10)</option>
+              <option value="no">Belum Mendapatkan Bonus</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <span class="input-label">Urutkan</span>
+            <select id="sort-filter" class="form-control">
+              <option value="rank">Peringkat (Tinggi ke Rendah)</option>
+              <option value="points-asc">Poin (Rendah ke Tinggi)</option>
+              <option value="name">Nama (A - Z)</option>
+              <option value="arcade">Arcade Games Terbanyak</option>
+              <option value="skills">Lencana Keahlian Terbanyak</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTIONS & EXPORTS -->
+      <div class="leaderboard-header-actions">
+        <h2 class="section-title">Papan Peringkat Peserta</h2>
+        <div class="export-buttons">
+          <button class="btn btn-secondary" id="reset-data-btn">Reset Data</button>
+          <button class="btn btn-accent" id="export-long-btn">Ekspor Gambar Panjang</button>
+          <button class="btn" id="export-pdf-btn">Ekspor PDF (16:9)</button>
+          <button class="btn" id="export-zip-btn">Ekspor ZIP Gambar (16:9)</button>
+        </div>
+      </div>
+
+      <!-- TABLE LAYOUT (DESKTOP) -->
+      <div class="table-container">
+        <table class="leaderboard-table" id="leaderboard-table">
+          <thead>
+            <tr>
+              <th style="width: 80px; text-align: center;">Rank</th>
+              <th>Nama Peserta</th>
+              <th style="width: 100px; text-align: center;">Total Poin</th>
+              <th>Progress Milestone</th>
+              <th style="width: 150px; text-align: center;">Arcade Games</th>
+              <th style="width: 150px; text-align: center;">Skill Badges</th>
+              <th>GEAR Bonus</th>
+              <th style="width: 100px;">Profil</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-table-body">
+            <!-- Dynamically populated rows -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- CARDS LAYOUT (MOBILE) -->
+      <div class="mobile-cards-container" id="mobile-cards-container">
+        <!-- Dynamically populated cards -->
+      </div>
+    </div>
+  </div>
+
+  <!-- DETAILS MODAL -->
+  <div class="modal-overlay" id="details-modal">
+    <div class="modal-content">
+      <button class="modal-close" id="modal-close-btn">&times;</button>
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-participant-name">Nama Peserta</h2>
+        <div class="modal-subtitle" id="modal-participant-points">Total Poin: 0</div>
+      </div>
+      <div class="modal-body">
+        
+        <!-- Milestone Progress Section -->
+        <div class="modal-section">
+          <h3 class="modal-section-title">Status Milestone & Target</h3>
+          <div style="margin-bottom: 15px;">
+            <span class="milestone-badge" id="modal-milestone-badge">None</span>
+            <span class="gear-badge" id="modal-gear-badge" style="margin-left: 10px; display: none;">GEAR Ready (+10 Pts)</span>
+          </div>
+          
+          <div class="progress-wrapper" style="margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px;">
+              <span>Arcade Games</span>
+              <span id="modal-arcade-progress-text">0 / 6 Games</span>
+            </div>
+            <div class="progress-container">
+              <div class="progress-bar" id="modal-arcade-progress-bar"></div>
+            </div>
+          </div>
+
+          <div class="progress-wrapper">
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px;">
+              <span>Skill Badges</span>
+              <span id="modal-skill-progress-text">0 / 14 Badges</span>
+            </div>
+            <div class="progress-container">
+              <div class="progress-bar" id="modal-skill-progress-bar" style="background: linear-gradient(90deg, var(--accent-pink), var(--accent-green));"></div>
+            </div>
+          </div>
+          <p class="stat-desc" id="modal-next-milestone-hint" style="margin-top: 8px;">Butuh 5 games & 12 skills untuk mencapai Milestone 1.</p>
+        </div>
+
+        <!-- Badges Details -->
+        <div class="modal-section">
+          <h3 class="modal-section-title">Arcade Games yang Diselesaikan (<span id="modal-arcade-count">0</span>)</h3>
+          <div class="badge-tag-list" id="modal-arcade-list">
+            <!-- Arcade list tags -->
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <h3 class="modal-section-title">Lencana Keahlian (Skill Badges) (<span id="modal-skill-count">0</span>)</h3>
+          <div class="badge-tag-list" id="modal-skill-list">
+            <!-- Skill list tags -->
+          </div>
+        </div>
+
+        <!-- Verification details -->
+        <div class="modal-section">
+          <h3 class="modal-section-title">Verifikasi AI Agent</h3>
+          <p style="font-size: 0.85rem;" id="modal-verification-status">Status: Belum Verifikasi</p>
+        </div>
+
+        <!-- URLs -->
+        <div class="modal-section">
+          <h3 class="modal-section-title">Tautan Profil Resmi</h3>
+          <div class="profile-links-container" id="modal-links-container">
+            <!-- Clickable icons -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATUS TOAST FOR EXPORTING PROGRESS -->
+  <div class="status-toast" id="status-toast">
+    <div class="spinner"></div>
+    <span id="status-toast-text">Mengekspor data...</span>
+  </div>
+
+  <!-- TEMPLATE FOR 16:9 SLIDES (OFF SCREEN) -->
+  <div id="export-render-area">
+    <!-- Will be dynamically populated during export -->
+  </div>
+
+  <!-- TEMPLATE FOR SINGLE LONG IMAGE (OFF SCREEN) -->
+  <div id="export-long-render-area">
+    <!-- Will be dynamically populated during export -->
+  </div>
+
+  <!-- Dynamic Export Script Dependencies (CDN) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
