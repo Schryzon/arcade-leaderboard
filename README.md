@@ -1,10 +1,10 @@
-# 🌌 The Arcade Leaderboard Generator
+# The Arcade Leaderboard Generator
 
 A premium, client-side, responsive scoreboard application built for the **Google Cloud Arcade Facilitator 2026** program. 
 
 This tool is designed to parse participant progress exports, dynamically calculate leaderboard scores, track milestones progress, and export high-quality, shareable marketing graphics—running 100% locally in the browser with **complete data privacy** (no participant names, emails, or phone numbers are ever sent to a server).
 
-## 🚀 Key Features
+## Key Features
 
 * **Zero-Leak Privacy**: The page loads completely empty. All CSV files are parsed locally in-memory on your machine.
 * **Point System Calculation**:
@@ -24,7 +24,7 @@ This tool is designed to parse participant progress exports, dynamically calcula
   * **Export PDF (16:9)**: Compiles the 16:9 slides into a multi-page landscape PDF file for slide decks.
   * **Export Long Image (PNG)**: Generates a single high-resolution vertical ranking poster, perfect for sharing on messaging channels (WhatsApp/Telegram/Slack).
 
-## 🎮 Arcade Aesthetic
+## Arcade Aesthetic
 
 The site is designed with a premium, retro-space theme inspired by the Google Cloud Arcade design:
 * Deep-space navy gradients.
@@ -33,7 +33,7 @@ The site is designed with a premium, retro-space theme inspired by the Google Cl
 * Retro arcade typography (`Silkscreen`, `Press Start 2P`, and `Orbitron` digital fonts).
 * Neon glow effects on achievements, ranks, and buttons.
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 * **Core Structure**: Semantic HTML5.
 * **Styling**: Modern, responsive Vanilla CSS (custom properties, flexbox, grid, glassmorphism, animations).
@@ -43,7 +43,7 @@ The site is designed with a premium, retro-space theme inspired by the Google Cl
   * [jsPDF](https://github.com/parallax/jsPDF) for generating landscape document files.
   * [JSZip](https://github.com/Stuk/jszip) for packaging image files client-side.
 
-## 🧑‍💻 How to Use
+## How to Use
 
 1. Double-click `index.html` to run the website locally in any browser, or deploy it to **GitHub Pages** (`github.io`).
 2. Drag and drop your official program CSV export file into the upload zone.
@@ -51,6 +51,7 @@ The site is designed with a premium, retro-space theme inspired by the Google Cl
 4. Click on any participant row or card to inspect complete badge lists and next-milestone requirements.
 5. Click **Ekspor** buttons to save PNG graphics or PDF reports to share with your group.
 
-## 🔒 License
+## License
 
 This project is licensed under a custom **Proprietary License** (All Rights Reserved). Unauthorized copying, distribution, or modifications of these files are strictly prohibited.
+
