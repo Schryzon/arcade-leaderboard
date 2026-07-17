@@ -78,8 +78,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Load saved data from localStorage on load if available
   const savedData = localStorage.getItem('arcade_leaderboard_csv_raw');
+  const savedTimestamp = localStorage.getItem('arcade_leaderboard_csv_timestamp') || '';
   if (savedData) {
-    processCSVData(savedData);
+    processCSVData(savedData, savedTimestamp);
   }
 
   // --- 1. Background Starfield ---
@@ -144,8 +145,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const reader = new FileReader();
     reader.onload = function(e) {
       const text = e.target.result;
+      const now = new Date();
+      const timestamp = now.toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
       localStorage.setItem('arcade_leaderboard_csv_raw', text);
-      processCSVData(text);
+      localStorage.setItem('arcade_leaderboard_csv_timestamp', timestamp);
+      processCSVData(text, timestamp);
     };
     reader.readAsText(file);
   }
@@ -153,11 +164,17 @@ document.addEventListener('DOMContentLoaded', () => {
   resetDataBtn.addEventListener('click', () => {
     if (confirm('Apakah Anda yakin ingin menghapus data leaderboard?')) {
       localStorage.removeItem('arcade_leaderboard_csv_raw');
+      localStorage.removeItem('arcade_leaderboard_csv_timestamp');
       parsedParticipants = [];
       filteredParticipants = [];
       uploadContainer.style.display = 'block';
       leaderboardSection.style.display = 'none';
       fileInput.value = '';
+      const lastUpdatedEl = document.getElementById('last-updated-time');
+      if (lastUpdatedEl) {
+        lastUpdatedEl.style.display = 'none';
+        lastUpdatedEl.textContent = '';
+      }
     }
   });
 
@@ -207,7 +224,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function processCSVData(csvText) {
+  function processCSVData(csvText, timestamp) {
+    const lastUpdatedEl = document.getElementById('last-updated-time');
+    if (lastUpdatedEl) {
+      if (timestamp) {
+        lastUpdatedEl.textContent = `Terakhir disimpan: ${timestamp}`;
+        lastUpdatedEl.style.display = 'block';
+      } else {
+        lastUpdatedEl.style.display = 'none';
+      }
+    }
     const rawRows = parseCSV(csvText);
     if (rawRows.length < 2) {
       alert('Berkas CSV kosong atau tidak valid.');
