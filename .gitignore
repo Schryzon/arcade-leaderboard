@@ -17,9 +17,9 @@ data/
 Thumbs.db
 node_modules/
 .gemini/
-.agents/
 brain/
 task.md
+
 implementation_plan.md
 walkthrough.md
 scratch/
