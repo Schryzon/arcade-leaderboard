@@ -24,6 +24,18 @@ document.addEventListener('DOMContentLoaded', () => {
               .replace(/'/g, '&#039;');
   }
 
+  // Filename timestamp helper to prevent duplicate/overwritten downloads
+  function getFilenameTimestamp() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hour = String(now.getHours()).padStart(2, '0');
+    const minute = String(now.getMinutes()).padStart(2, '0');
+    const second = String(now.getSeconds()).padStart(2, '0');
+    return `${year}${month}${day}_${hour}${minute}${second}`;
+  }
+
   // Cache DOM Elements
   const dropzone = document.getElementById('dropzone');
   const fileInput = document.getElementById('csv-file-input');
@@ -898,7 +910,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Trigger download
         const link = document.createElement('a');
-        link.download = 'Arcade_Leaderboard_Full.png';
+        link.download = `Arcade_Leaderboard_Full_${getFilenameTimestamp()}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
         
@@ -959,7 +971,7 @@ document.addEventListener('DOMContentLoaded', () => {
         pdf.addImage(imgData, 'PNG', 0, 0, 1280, 720);
       }
 
-      pdf.save('Arcade_Leaderboard.pdf');
+      pdf.save(`Arcade_Leaderboard_${getFilenameTimestamp()}.pdf`);
       hideToast();
     } catch (err) {
       console.error(err);
@@ -1013,7 +1025,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       
       const link = document.createElement('a');
-      link.download = 'Arcade_Leaderboard_Slides.zip';
+      link.download = `Arcade_Leaderboard_Slides_${getFilenameTimestamp()}.zip`;
       link.href = URL.createObjectURL(zipBlob);
       link.click();
 
