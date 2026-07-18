@@ -820,9 +820,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- 6. Export Functions ---
 
   // Trigger Toast Notification
-  function showToast(message) {
+  function showToast(message, showSpinner = true, duration = 0) {
     statusToastText.textContent = message;
+    const spinner = statusToast.querySelector('.spinner');
+    if (spinner) {
+      spinner.style.display = showSpinner ? 'block' : 'none';
+    }
     statusToast.style.display = 'flex';
+    
+    if (duration > 0) {
+      setTimeout(hideToast, duration);
+    }
   }
 
   function hideToast() {
@@ -1292,7 +1300,7 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('arcade_profile_cache', JSON.stringify(profileCache));
     updateLeaderboard();
     
-    showToast('Sinkronisasi profil selesai!');
+    showToast('Sinkronisasi profil selesai!', false, 2000);
     setTimeout(() => {
       progressContainer.style.display = 'none';
       syncLiveBtn.disabled = false;
@@ -1491,7 +1499,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     openParticipantModal(activeModalParticipant, activeParticipantIndex());
 
-    showToast('Data live berhasil diterapkan ke leaderboard!');
+    showToast('Data live berhasil diterapkan ke leaderboard!', false, 2000);
     modalLiveSyncAction.style.display = 'none';
   }
 
