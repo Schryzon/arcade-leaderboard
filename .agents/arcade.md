@@ -39,3 +39,24 @@ Participants progress through 4 milestone levels based on the completed badge co
 * **Typography**: Press Start 2P and Silkscreen for retro titles, Orbitron for scores/numbers, and Inter for general list data.
 * **Mobile Responsiveness**: On viewports narrower than `768px`, the grid list must collapse into touch-friendly cards containing an accordion dropdown for badge names.
 * **Export Templates**: 16:9 landscape slides (ZIP and PDF) and the single long vertical ranking poster must render off-screen with high scaling factors (e.g. scale = 2) for crystal clear graphics.
+
+## Live Sync, Caching & Classification
+
+### 1. CORS & Concurrency
+* Public Google Skills profiles are fetched client-side using `https://corsproxy.io/?url=`.
+* Syncing all profiles is performed in parallel batches with a concurrency of `5` to prevent rate-limiting.
+
+### 2. Local Storage & Caching
+* **Leaderboard Data**: CSV text and upload time are stored in `arcade_leaderboard_csv_raw` and `arcade_leaderboard_csv_timestamp`.
+* **Sync Cache**: Profile stats are cached under `arcade_profile_cache` keyed by the participant's `skillsUrl`. On load, the CSV parser merges records with this cache for O(1) startup times.
+* **Custom Classifications**: Manual categorization overrides are stored in `arcade_custom_badge_classifications` (`{ badgeTitle: "arcade" | "skill" | "ignored" }`).
+
+### 3. Classification Engine
+* **Arcade Games**: The badge's dialog link `href` contains `/games/`.
+* **Skill Badges**: The badge's dialog description contains `"skill badge"` (case-insensitive).
+* **Completion Badges**: Ignored.
+* **Overrides**: Any entries in `arcade_custom_badge_classifications` immediately bypass default rules.
+
+### 4. Discrepancy Tracking (Diffs)
+* Points and badge count differences between live data and the CSV record are calculated and displayed using inline green indicators (e.g., `+2 Live`) next to scores in lists.
+
