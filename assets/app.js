@@ -13,6 +13,58 @@ document.addEventListener('DOMContentLoaded', () => {
   let filteredParticipants = [];
   let activeParticipant = null;
 
+  // Live Verification & Cache State
+  const knownSkillBadges = new Set();
+  const knownArcadeGames = new Set();
+  let customClassifications = {};
+  let profileCache = {};
+  let activeModalParticipant = null;
+
+  try {
+    const savedClassifications = localStorage.getItem('arcade_custom_badge_classifications');
+    if (savedClassifications) {
+      customClassifications = JSON.parse(savedClassifications);
+    }
+  } catch (e) {
+    console.error('Failed to load custom classifications:', e);
+  }
+
+  try {
+    const savedCache = localStorage.getItem('arcade_profile_cache');
+    if (savedCache) {
+      profileCache = JSON.parse(savedCache);
+    }
+  } catch (e) {
+    console.error('Failed to load profile cache:', e);
+  }
+
+  // Soft Match helper
+  function softMatch(a, b) {
+    const normA = a.toLowerCase().trim();
+    const normB = b.toLowerCase().trim();
+    if (normA === normB) return true;
+    if (normA.includes(normB) || normB.includes(normA)) return true;
+
+    const getParenthesesContent = str => {
+      const match = str.match(/\(([^)]+)\)/);
+      return match ? match[1].toLowerCase().trim() : '';
+    };
+
+    const parenA = getParenthesesContent(a);
+    const parenB = getParenthesesContent(b);
+    if (parenA && parenB && parenA === parenB) return true;
+    if (parenA && normB.includes(parenA)) return true;
+    if (parenB && normA.includes(parenB)) return true;
+
+    return false;
+  }
+
+  // Split badges by comma-space helper
+  function splitBadgesList(str) {
+    if (!str) return [];
+    return str.split(/,\s+/).map(s => s.trim()).filter(Boolean);
+  }
+
   // HTML Escape helper to prevent XSS/Injection from CSV data
   function escapeHtml(str) {
     if (str === null || str === undefined) return '';
@@ -78,6 +130,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalSkillList = document.getElementById('modal-skill-list');
   const modalVerificationStatus = document.getElementById('modal-verification-status');
   const modalLinksContainer = document.getElementById('modal-links-container');
+
+  // Live Sync & Cache Elements
+  const syncLiveBtn = document.getElementById('sync-live-btn');
+  const modalVerifyLiveBtn = document.getElementById('modal-verify-live-btn');
+  const modalLiveVerifyContainer = document.getElementById('modal-live-verify-container');
+  const modalLiveVerifySummary = document.getElementById('modal-live-verify-summary');
+  const modalLiveBadgeList = document.getElementById('modal-live-badge-list');
+  const modalLiveSyncAction = document.getElementById('modal-live-sync-action');
+  const modalApplyLiveBtn = document.getElementById('modal-apply-live-btn');
 
   // Export Elements
   const exportLongBtn = document.getElementById('export-long-btn');
@@ -177,6 +238,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirm('Apakah Anda yakin ingin menghapus data leaderboard?')) {
       localStorage.removeItem('arcade_leaderboard_csv_raw');
       localStorage.removeItem('arcade_leaderboard_csv_timestamp');
+      localStorage.removeItem('arcade_profile_cache');
+      profileCache = {};
       parsedParticipants = [];
       filteredParticipants = [];
       uploadContainer.style.display = 'block';
@@ -274,6 +337,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     parsedParticipants = [];
+    knownSkillBadges.clear();
+    knownArcadeGames.clear();
 
     // Parse records starting from row index 1
     for (let i = 1; i < rawRows.length; i++) {
@@ -286,10 +351,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const email = (row[emailIdx] || '').trim();
       const skillsCount = parseInt(row[skillsCountIdx]) || 0;
-      const skillsList = parseCommaList(row[skillsListIdx]);
+      const skillsList = splitBadgesList(row[skillsListIdx]);
       const arcadeCount = parseInt(row[arcadeCountIdx]) || 0;
-      const arcadeList = parseCommaList(row[arcadeListIdx]);
+      const arcadeList = splitBadgesList(row[arcadeListIdx]);
       
+      // Populate known badges sets
+      skillsList.forEach(badge => knownSkillBadges.add(badge));
+      arcadeList.forEach(badge => knownArcadeGames.add(badge));
+
       // Calculate Points
       const bonusStr = (row[bonusMilestoneIdx] || '').trim().toLowerCase();
       const hasBonus = bonusStr === 'yes' || bonusStr === 'ya' || bonusStr === '10';
@@ -307,22 +376,59 @@ document.addEventListener('DOMContentLoaded', () => {
       const skillsUrl = (rawSkillsUrl.startsWith('http://') || rawSkillsUrl.startsWith('https://')) ? rawSkillsUrl : '';
       const devUrl = (rawDevUrl.startsWith('http://') || rawDevUrl.startsWith('https://')) ? rawDevUrl : '';
 
-      parsedParticipants.push({
-        name,
-        email: maskEmail(email),
-        skillsCount,
-        skillsList,
-        arcadeCount,
-        arcadeList,
-        points: calculatedPoints,
-        milestoneCSV,
-        milestone: calculatedMilestone,
-        hasBonus,
-        verifyStatus,
-        gearBadge,
-        skillsUrl,
-        devUrl
-      });
+      // Merge with cache if available
+      const cache = profileCache[skillsUrl];
+      if (cache && skillsUrl) {
+        parsedParticipants.push({
+          name,
+          email: maskEmail(email),
+          // original CSV stats
+          csvSkillsCount: skillsCount,
+          csvArcadeCount: arcadeCount,
+          csvPoints: calculatedPoints,
+          // active stats (initially from cache)
+          skillsCount: cache.skillsCount,
+          skillsList: cache.skillsList || skillsList,
+          arcadeCount: cache.arcadeCount,
+          arcadeList: cache.arcadeList || arcadeList,
+          points: cache.points,
+          milestoneCSV,
+          milestone: cache.milestone,
+          hasBonus,
+          verifyStatus,
+          gearBadge,
+          skillsUrl,
+          devUrl,
+          diffCount: (cache.arcadeCount + cache.skillsCount) - (arcadeCount + skillsCount),
+          diffPoints: cache.points - calculatedPoints,
+          lastSynced: cache.lastSynced
+        });
+      } else {
+        parsedParticipants.push({
+          name,
+          email: maskEmail(email),
+          // original CSV stats
+          csvSkillsCount: skillsCount,
+          csvArcadeCount: arcadeCount,
+          csvPoints: calculatedPoints,
+          // active stats (initially from CSV)
+          skillsCount,
+          skillsList,
+          arcadeCount,
+          arcadeList,
+          points: calculatedPoints,
+          milestoneCSV,
+          milestone: calculatedMilestone,
+          hasBonus,
+          verifyStatus,
+          gearBadge,
+          skillsUrl,
+          devUrl,
+          diffCount: 0,
+          diffPoints: 0,
+          lastSynced: null
+        });
+      }
     }
 
     // Hide upload and show leaderboard
@@ -466,10 +572,18 @@ document.addEventListener('DOMContentLoaded', () => {
       // --- Desktop Row HTML ---
       const tr = document.createElement('tr');
       tr.style.cursor = 'pointer';
+      
+      let diffHtml = '';
+      if (p.diffPoints && p.diffPoints > 0) {
+        diffHtml = `<span class="diff-badge positive">+${p.diffPoints} Live</span>`;
+      } else if (p.diffPoints && p.diffPoints < 0) {
+        diffHtml = `<span class="diff-badge negative">${p.diffPoints} Live</span>`;
+      }
+
       tr.innerHTML = `
         <td style="text-align: center;"><span class="rank-badge ${rankClass}">${rank}</span></td>
         <td class="name-cell">${escapeHtml(p.name)}</td>
-        <td style="text-align: center;" class="points-badge">${p.points}</td>
+        <td style="text-align: center;" class="points-badge">${p.points}${diffHtml}</td>
         <td><span class="milestone-badge ${milestoneClass}">${escapeHtml(p.milestone)}</span></td>
         <td style="text-align: center;"><span class="badge-count arcade">🎮 ${p.arcadeCount}</span></td>
         <td style="text-align: center;"><span class="badge-count skill">🏆 ${p.skillsCount}</span></td>
@@ -499,7 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="rank-badge ${rankClass}">${rank}</span>
             <span class="mobile-name">${escapeHtml(p.name)}</span>
           </div>
-          <span class="mobile-points">${p.points} Pts</span>
+          <span class="mobile-points">${p.points} Pts${diffHtml}</span>
         </div>
         <div class="mobile-card-body">
           <div class="mobile-stat">
@@ -571,6 +685,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- 5. Detail Modal ---
   function openParticipantModal(p, rank) {
     activeParticipant = p;
+    activeModalParticipant = p;
     modalName.textContent = p.name;
     modalPoints.textContent = `Total Poin: ${p.points} Poin (Peringkat #${rank})`;
 
@@ -658,6 +773,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (!p.skillsUrl && !p.devUrl) {
       modalLinksContainer.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">Tidak ada tautan profil publik.</span>';
+    }
+
+    // Reset Live Sync UI states
+    modalLiveVerifyContainer.style.display = 'none';
+    modalVerifyLiveBtn.textContent = 'Sinkronisasi Sekarang';
+    modalVerifyLiveBtn.disabled = false;
+    modalLiveVerifySummary.innerHTML = '';
+    modalLiveBadgeList.innerHTML = '';
+    modalLiveSyncAction.style.display = 'none';
+
+    if (p.skillsUrl) {
+      modalVerifyLiveBtn.style.display = 'inline-block';
+      const cache = profileCache[p.skillsUrl];
+      if (cache) {
+        const syncedDate = new Date(cache.lastSynced).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        const syncedDay = new Date(cache.lastSynced).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+        modalVerifyLiveBtn.textContent = `Disinkronkan (${syncedDay}, ${syncedDate})`;
+      }
+    } else {
+      modalVerifyLiveBtn.style.display = 'none';
     }
 
     detailsModal.style.display = 'flex';
@@ -1038,5 +1173,341 @@ document.addEventListener('DOMContentLoaded', () => {
       exportRenderArea.innerHTML = ''; // Clean up
     }
   });
+
+  // --- 7. Live Profile Synchronizer & Concurrency Queue ---
+
+  async function fetchAndParseProfile(profileUrl, hasBonus) {
+    if (!profileUrl) return null;
+    const proxyUrl = 'https://corsproxy.io/?url=' + encodeURIComponent(profileUrl);
+    const res = await fetch(proxyUrl);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const htmlText = await res.text();
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlText, 'text/html');
+
+    const badgeElements = doc.querySelectorAll('.profile-badge');
+    const arcadeList = [];
+    const skillsList = [];
+
+    badgeElements.forEach(badgeEl => {
+      const titleEl = badgeEl.querySelector('.ql-title-medium');
+      const title = titleEl ? titleEl.textContent.trim() : '';
+      if (!title) return;
+
+      const dialogId = badgeEl.querySelector('ql-button') ? badgeEl.querySelector('ql-button').getAttribute('modal') : '';
+      const dialog = dialogId ? doc.getElementById(dialogId) : null;
+      
+      const learnMoreBtn = dialog ? dialog.querySelector('ql-button[slot="action"]') : null;
+      const href = learnMoreBtn ? (learnMoreBtn.getAttribute('href') || '') : '';
+      const description = dialog ? (dialog.querySelector('p') ? dialog.querySelector('p').textContent.toLowerCase() : '') : '';
+
+      let type = 'ignored';
+      if (customClassifications[title]) {
+        type = customClassifications[title];
+      } else {
+        const isArcade = href.includes('/games/');
+        const isSkill = description.includes('skill badge');
+        if (isArcade) type = 'arcade';
+        else if (isSkill) type = 'skill';
+      }
+
+      if (type === 'arcade') arcadeList.push(title);
+      else if (type === 'skill') skillsList.push(title);
+    });
+
+    const arcadeCount = arcadeList.length;
+    const skillsCount = skillsList.length;
+    const points = arcadeCount * 1 + Math.floor(skillsCount / 2) + (hasBonus ? 10 : 0);
+    const milestone = getCalculatedMilestone(arcadeCount, skillsCount);
+
+    return {
+      arcadeCount,
+      skillsCount,
+      arcadeList,
+      skillsList,
+      points,
+      milestone
+    };
+  }
+
+  async function syncAllProfiles() {
+    const participantsWithUrls = parsedParticipants.filter(p => p.skillsUrl);
+    if (participantsWithUrls.length === 0) {
+      alert('Tidak ada tautan profil Google Skills untuk disinkronisasi.');
+      return;
+    }
+
+    const progressContainer = document.getElementById('sync-progress-container');
+    const progressText = document.getElementById('sync-progress-text');
+    const progressPercent = document.getElementById('sync-progress-percent');
+    const progressBar = document.getElementById('sync-progress-bar');
+
+    syncLiveBtn.disabled = true;
+    syncLiveBtn.textContent = 'Syncing...';
+    progressContainer.style.display = 'block';
+
+    let completed = 0;
+    const total = participantsWithUrls.length;
+    const concurrency = 5;
+
+    for (let i = 0; i < total; i += concurrency) {
+      const batch = participantsWithUrls.slice(i, i + concurrency);
+      await Promise.all(batch.map(async (p) => {
+        try {
+          const stats = await fetchAndParseProfile(p.skillsUrl, p.hasBonus);
+          if (stats) {
+            profileCache[p.skillsUrl] = {
+              arcadeCount: stats.arcadeCount,
+              skillsCount: stats.skillsCount,
+              points: stats.points,
+              milestone: stats.milestone,
+              arcadeList: stats.arcadeList,
+              skillsList: stats.skillsList,
+              lastSynced: new Date().getTime()
+            };
+            
+            p.arcadeCount = stats.arcadeCount;
+            p.skillsCount = stats.skillsCount;
+            p.arcadeList = stats.arcadeList;
+            p.skillsList = stats.skillsList;
+            p.points = stats.points;
+            p.milestone = stats.milestone;
+            p.diffCount = (stats.arcadeCount + stats.skillsCount) - (p.csvArcadeCount + p.csvSkillsCount);
+            p.diffPoints = stats.points - p.csvPoints;
+            p.lastSynced = profileCache[p.skillsUrl].lastSynced;
+          }
+        } catch (err) {
+          console.error(`Gagal sinkronisasi profil ${p.name}:`, err);
+        } finally {
+          completed++;
+          const percentage = Math.round((completed / total) * 100);
+          progressText.textContent = `Menyelaraskan profil: ${completed} / ${total} peserta...`;
+          progressPercent.textContent = `${percentage}%`;
+          progressBar.style.width = `${percentage}%`;
+        }
+      }));
+    }
+
+    localStorage.setItem('arcade_profile_cache', JSON.stringify(profileCache));
+    updateLeaderboard();
+    
+    showToast('Sinkronisasi profil selesai!');
+    setTimeout(() => {
+      progressContainer.style.display = 'none';
+      syncLiveBtn.disabled = false;
+      syncLiveBtn.textContent = 'Sync Live';
+    }, 2000);
+  }
+
+  let tempLiveStats = null;
+
+  async function syncSingleProfile() {
+    if (!activeModalParticipant || !activeModalParticipant.skillsUrl) {
+      alert('Tautan profil tidak tersedia.');
+      return;
+    }
+
+    modalVerifyLiveBtn.disabled = true;
+    modalVerifyLiveBtn.textContent = 'Memproses...';
+    modalLiveVerifyContainer.style.display = 'block';
+    modalLiveVerifySummary.innerHTML = '<span style="color: var(--accent-cyan);">Menghubungkan ke profil...</span>';
+    modalLiveBadgeList.innerHTML = '';
+    modalLiveSyncAction.style.display = 'none';
+
+    try {
+      const proxyUrl = 'https://corsproxy.io/?url=' + encodeURIComponent(activeModalParticipant.skillsUrl);
+      const res = await fetch(proxyUrl);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const htmlText = await res.text();
+
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlText, 'text/html');
+
+      const badgeElements = doc.querySelectorAll('.profile-badge');
+      const rawBadges = [];
+
+      badgeElements.forEach(badgeEl => {
+        const titleEl = badgeEl.querySelector('.ql-title-medium');
+        const title = titleEl ? titleEl.textContent.trim() : '';
+        if (!title) return;
+
+        const dialogId = badgeEl.querySelector('ql-button') ? badgeEl.querySelector('ql-button').getAttribute('modal') : '';
+        const dialog = dialogId ? doc.getElementById(dialogId) : null;
+        const learnMoreBtn = dialog ? dialog.querySelector('ql-button[slot="action"]') : null;
+        const href = learnMoreBtn ? (learnMoreBtn.getAttribute('href') || '') : '';
+        const description = dialog ? (dialog.querySelector('p') ? dialog.querySelector('p').textContent.toLowerCase() : '') : '';
+
+        rawBadges.push({ title, href, description });
+      });
+
+      renderLiveVerifyList(rawBadges);
+    } catch (err) {
+      console.error(err);
+      modalLiveVerifySummary.innerHTML = `<span style="color: var(--accent-pink);">Gagal memproses profil: ${escapeHtml(err.message)}</span>`;
+      modalVerifyLiveBtn.disabled = false;
+      modalVerifyLiveBtn.textContent = 'Sinkronisasi Sekarang';
+    }
+  }
+
+  function renderLiveVerifyList(rawBadges) {
+    modalLiveBadgeList.innerHTML = '';
+    
+    const processedBadges = rawBadges.map(badge => {
+      let type = 'ignored';
+      if (customClassifications[badge.title]) {
+        type = customClassifications[badge.title];
+      } else {
+        const isArcade = badge.href.includes('/games/');
+        const isSkill = badge.description.includes('skill badge');
+        if (isArcade) type = 'arcade';
+        else if (isSkill) type = 'skill';
+      }
+      return { title: badge.title, type };
+    });
+
+    const arcadeList = processedBadges.filter(b => b.type === 'arcade').map(b => b.title);
+    const skillsList = processedBadges.filter(b => b.type === 'skill').map(b => b.title);
+    const livePoints = arcadeList.length * 1 + Math.floor(skillsList.length / 2) + (activeModalParticipant.hasBonus ? 10 : 0);
+    const liveMilestone = getCalculatedMilestone(arcadeList.length, skillsList.length);
+
+    tempLiveStats = {
+      arcadeCount: arcadeList.length,
+      skillsCount: skillsList.length,
+      arcadeList,
+      skillsList,
+      points: livePoints,
+      milestone: liveMilestone
+    };
+
+    const isDiff = tempLiveStats.points !== activeModalParticipant.points ||
+                   tempLiveStats.arcadeCount !== activeModalParticipant.arcadeCount ||
+                   tempLiveStats.skillsCount !== activeModalParticipant.skillsCount;
+
+    let summaryHtml = `
+      <div style="margin-bottom: 8px;">Ditemukan <strong>${processedBadges.length} Lencana Total</strong> di profil live:</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: var(--font-stats); font-size: 0.8rem; margin-top: 5px;">
+        <div style="border-left: 2px solid var(--accent-cyan); padding-left: 5px;">
+          Live: 🎮 ${tempLiveStats.arcadeCount} | 🏆 ${tempLiveStats.skillsCount} | Poin: ${tempLiveStats.points}
+        </div>
+        <div style="border-left: 2px solid var(--text-muted); padding-left: 5px; color: var(--text-muted);">
+          CSV: 🎮 ${activeModalParticipant.csvArcadeCount} | 🏆 ${activeModalParticipant.csvSkillsCount} | Poin: ${activeModalParticipant.csvPoints}
+        </div>
+      </div>
+    `;
+
+    if (isDiff) {
+      const diff = tempLiveStats.points - activeModalParticipant.csvPoints;
+      const diffSign = diff >= 0 ? `+${diff}` : `${diff}`;
+      summaryHtml += `<div style="color: #00e096; margin-top: 8px; font-weight: bold;">⚠️ Selisih terdeteksi! (Diff: ${diffSign} Poin vs CSV)</div>`;
+      modalLiveSyncAction.style.display = 'block';
+    } else {
+      summaryHtml += `<div style="color: var(--accent-green); margin-top: 8px;">✓ Data cocok dengan data CSV/Cache.</div>`;
+      modalLiveSyncAction.style.display = 'block';
+    }
+    modalLiveVerifySummary.innerHTML = summaryHtml;
+
+    processedBadges.forEach(b => {
+      const row = document.createElement('div');
+      row.className = 'live-badge-item';
+      
+      let btnText = 'Ignored';
+      let btnClass = 'ignored';
+      if (b.type === 'arcade') {
+        btnText = '🎮 Arcade';
+        btnClass = 'arcade';
+      } else if (b.type === 'skill') {
+        btnText = '🏆 Skill';
+        btnClass = 'skill';
+      }
+
+      row.innerHTML = `
+        <span class="live-badge-title">${escapeHtml(b.title)}</span>
+        <button class="live-badge-type-toggle ${btnClass}" data-title="${escapeHtml(b.title)}">${btnText}</button>
+      `;
+
+      const toggleBtn = row.querySelector('.live-badge-type-toggle');
+      toggleBtn.addEventListener('click', () => {
+        const currentType = b.type;
+        let nextType = 'ignored';
+        if (currentType === 'ignored') nextType = 'arcade';
+        else if (currentType === 'arcade') nextType = 'skill';
+        else if (currentType === 'skill') nextType = 'ignored';
+
+        customClassifications[b.title] = nextType;
+        localStorage.setItem('arcade_custom_badge_classifications', JSON.stringify(customClassifications));
+        
+        renderLiveVerifyList(rawBadges);
+      });
+
+      modalLiveBadgeList.appendChild(row);
+    });
+
+    modalVerifyLiveBtn.disabled = false;
+    modalVerifyLiveBtn.textContent = 'Sinkronisasi Selesai';
+  }
+
+  function applySingleProfileLiveStats() {
+    if (!activeModalParticipant || !tempLiveStats) return;
+
+    activeModalParticipant.arcadeCount = tempLiveStats.arcadeCount;
+    activeModalParticipant.skillsCount = tempLiveStats.skillsCount;
+    activeModalParticipant.arcadeList = tempLiveStats.arcadeList;
+    activeModalParticipant.skillsList = tempLiveStats.skillsList;
+    activeModalParticipant.points = tempLiveStats.points;
+    activeModalParticipant.milestone = tempLiveStats.milestone;
+    
+    activeModalParticipant.diffCount = (tempLiveStats.arcadeCount + tempLiveStats.skillsCount) - 
+                                       (activeModalParticipant.csvArcadeCount + activeModalParticipant.csvSkillsCount);
+    activeModalParticipant.diffPoints = tempLiveStats.points - activeModalParticipant.csvPoints;
+    activeModalParticipant.lastSynced = new Date().getTime();
+
+    profileCache[activeModalParticipant.skillsUrl] = {
+      arcadeCount: tempLiveStats.arcadeCount,
+      skillsCount: tempLiveStats.skillsCount,
+      points: tempLiveStats.points,
+      milestone: tempLiveStats.milestone,
+      arcadeList: tempLiveStats.arcadeList,
+      skillsList: tempLiveStats.skillsList,
+      lastSynced: activeModalParticipant.lastSynced
+    };
+    localStorage.setItem('arcade_profile_cache', JSON.stringify(profileCache));
+
+    updateLeaderboard();
+
+    modalPoints.textContent = `Total Poin: ${activeModalParticipant.points} Poin (Peringkat #${activeParticipantIndex()})`;
+    modalMilestoneBadge.textContent = activeModalParticipant.milestone;
+    modalMilestoneBadge.className = `milestone-badge ${getMilestoneClass(activeModalParticipant.milestone)}`;
+    
+    modalArcadeCount.textContent = activeModalParticipant.arcadeCount;
+    modalArcadeList.innerHTML = activeModalParticipant.arcadeList.length > 0 
+      ? activeModalParticipant.arcadeList.map(b => `<span class="mini-badge-tag arcade-tag">${escapeHtml(b)}</span>`).join('')
+      : '<span style="color: var(--text-muted); font-size: 0.85rem;">Belum ada arcade game yang selesai.</span>';
+
+    modalSkillCount.textContent = activeModalParticipant.skillsCount;
+    modalSkillList.innerHTML = activeModalParticipant.skillsList.length > 0 
+      ? activeModalParticipant.skillsList.map(b => `<span class="mini-badge-tag skill-tag">${escapeHtml(b)}</span>`).join('')
+      : '<span style="color: var(--text-muted); font-size: 0.85rem;">Belum ada lencana keahlian yang selesai.</span>';
+
+    openParticipantModal(activeModalParticipant, activeParticipantIndex());
+
+    showToast('Data live berhasil diterapkan ke leaderboard!');
+    modalLiveSyncAction.style.display = 'none';
+  }
+
+  function activeParticipantIndex() {
+    return filteredParticipants.findIndex(p => p.skillsUrl === activeModalParticipant.skillsUrl) + 1;
+  }
+
+  // Wires Event Listeners
+  if (syncLiveBtn) {
+    syncLiveBtn.addEventListener('click', syncAllProfiles);
+  }
+  if (modalVerifyLiveBtn) {
+    modalVerifyLiveBtn.addEventListener('click', syncSingleProfile);
+  }
+  if (modalApplyLiveBtn) {
+    modalApplyLiveBtn.addEventListener('click', applySingleProfileLiveStats);
+  }
 
 });
