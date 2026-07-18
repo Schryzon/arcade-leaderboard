@@ -837,6 +837,56 @@ document.addEventListener('DOMContentLoaded', () => {
     statusToast.style.display = 'none';
   }
 
+  // Helper to inline @font-face rules and CSS variables for rendering inside sandbox (like Firefox SVG rendering)
+  function inlineStylesAndFonts(targetElement) {
+    let styleContent = '';
+    try {
+      for (const stylesheet of document.styleSheets) {
+        try {
+          if (stylesheet.cssRules) {
+            for (const rule of stylesheet.cssRules) {
+              if (rule.type === CSSRule.FONT_FACE_RULE || rule.cssText.startsWith('@font-face')) {
+                styleContent += rule.cssText + '\n';
+              }
+            }
+          }
+        } catch (e) {
+          // Ignore CORS/cross-origin stylesheet reading exceptions
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse font-face rules:', e);
+    }
+
+    styleContent += `
+      :root {
+        --bg-primary: #060b16;
+        --bg-secondary: #0c1428;
+        --bg-card: rgba(12, 20, 40, 0.7);
+        --border-color: rgba(0, 242, 254, 0.15);
+        --accent-gold: #fbc531;
+        --accent-gold-glow: rgba(251, 197, 49, 0.4);
+        --accent-cyan: #00f2fe;
+        --accent-cyan-glow: rgba(0, 242, 254, 0.4);
+        --accent-pink: #ff007f;
+        --accent-pink-glow: rgba(255, 0, 127, 0.4);
+        --accent-green: #39ff14;
+        --accent-green-glow: rgba(57, 255, 20, 0.4);
+        --accent-red: #ff3838;
+        --text-primary: #ffffff;
+        --text-secondary: #8b9bb4;
+        --text-muted: #53647c;
+        --font-retro: 'VT323', 'Silkscreen', 'Press Start 2P', monospace;
+        --font-stats: 'Orbitron', sans-serif;
+        --font-body: 'Inter', sans-serif;
+      }
+    `;
+
+    const styleTag = document.createElement('style');
+    styleTag.textContent = styleContent;
+    targetElement.appendChild(styleTag);
+  }
+
   // Helper to chunk participants into pages of size N (for 16:9 layouts)
   function chunkArray(array, size) {
     const chunked = [];
@@ -918,6 +968,7 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     slide.appendChild(footer);
 
+    inlineStylesAndFonts(slide);
     exportRenderArea.appendChild(slide);
   }
 
@@ -1039,6 +1090,7 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     container.appendChild(footer);
 
+    inlineStylesAndFonts(container);
     exportLongRenderArea.appendChild(container);
 
     // Render Canvas
