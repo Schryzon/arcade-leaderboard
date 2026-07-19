@@ -359,14 +359,15 @@ document.addEventListener('DOMContentLoaded', () => {
       skillsList.forEach(badge => knownSkillBadges.add(badge));
       arcadeList.forEach(badge => knownArcadeGames.add(badge));
 
-      // Calculate Points
-      const bonusStr = (row[bonusMilestoneIdx] || '').trim().toLowerCase();
-      const hasBonus = bonusStr === 'yes' || bonusStr === 'ya' || bonusStr === '10';
-      const calculatedPoints = arcadeCount * 1 + Math.floor(skillsCount / 2) + (hasBonus ? 10 : 0);
-
       // Milestone calculations
       const milestoneCSV = (row[milestoneIdx] || 'None').trim();
       const calculatedMilestone = getCalculatedMilestone(arcadeCount, skillsCount);
+
+      // Calculate Points
+      const bonusStr = (row[bonusMilestoneIdx] || '').trim().toLowerCase();
+      const hasBonus = bonusStr === 'yes' || bonusStr === 'ya' || bonusStr === '10';
+      const milestoneBonus = getMilestoneBonus(calculatedMilestone);
+      const calculatedPoints = arcadeCount * 1 + Math.floor(skillsCount / 2) + milestoneBonus + (hasBonus ? 10 : 0);
 
       const verifyStatus = (row[verifyStatusIdx] || 'Not yet submitted').trim();
       const gearBadge = (row[gearDigitalBadgeIdx] || '').trim();
@@ -379,6 +380,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // Merge with cache if available
       const cache = profileCache[skillsUrl];
       if (cache && skillsUrl) {
+        const cacheMilestone = getCalculatedMilestone(cache.arcadeCount, cache.skillsCount);
+        const cacheMilestoneBonus = getMilestoneBonus(cacheMilestone);
+        const cachePoints = cache.arcadeCount * 1 + Math.floor(cache.skillsCount / 2) + cacheMilestoneBonus + (hasBonus ? 10 : 0);
+
         parsedParticipants.push({
           name,
           email: maskEmail(email),
@@ -391,16 +396,16 @@ document.addEventListener('DOMContentLoaded', () => {
           skillsList: cache.skillsList || skillsList,
           arcadeCount: cache.arcadeCount,
           arcadeList: cache.arcadeList || arcadeList,
-          points: cache.points,
+          points: cachePoints,
           milestoneCSV,
-          milestone: cache.milestone,
+          milestone: cacheMilestone,
           hasBonus,
           verifyStatus,
           gearBadge,
           skillsUrl,
           devUrl,
           diffCount: (cache.arcadeCount + cache.skillsCount) - (arcadeCount + skillsCount),
-          diffPoints: cache.points - calculatedPoints,
+          diffPoints: cachePoints - calculatedPoints,
           lastSynced: cache.lastSynced
         });
       } else {
@@ -454,11 +459,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getCalculatedMilestone(games, skills) {
-    if (games >= 12 && skills >= 56) return "Ultimate Milestone";
-    if (games >= 10 && skills >= 42) return "Milestone 3";
-    if (games >= 8 && skills >= 28) return "Milestone 2";
-    if (games >= 6 && skills >= 14) return "Milestone 1";
+    if (games >= 12 && skills >= 66) return "Ultimate Milestone";
+    if (games >= 10 && skills >= 50) return "Milestone 3";
+    if (games >= 8 && skills >= 34) return "Milestone 2";
+    if (games >= 6 && skills >= 18) return "Milestone 1";
     return "None";
+  }
+
+  function getMilestoneBonus(milestone) {
+    if (milestone === "Ultimate Milestone") return 35;
+    if (milestone === "Milestone 3") return 25;
+    if (milestone === "Milestone 2") return 15;
+    if (milestone === "Milestone 1") return 5;
+    return 0;
   }
 
   // --- 4. Filtering, Sorting, and Rendering ---
@@ -569,6 +582,15 @@ document.addEventListener('DOMContentLoaded', () => {
         profileButtons += `<a href="${p.devUrl}" target="_blank" class="profile-link dev" title="Google Developer Profile">D</a>`;
       }
 
+      // GEAR Bonus and Badge Status Logic
+      const hasGearBadge = p.gearBadge && p.gearBadge.toLowerCase() !== 'no' && p.gearBadge.toLowerCase() !== 'none' && p.gearBadge.trim() !== '';
+      let gearBonusHtml = '<span style="color: var(--text-muted); font-size:0.75rem;">-</span>';
+      if (p.hasBonus) {
+        gearBonusHtml = '<span class="gear-badge">⚙️ Bonus (+10)</span>';
+      } else if (hasGearBadge) {
+        gearBonusHtml = '<span class="gear-badge" style="background: linear-gradient(135deg, rgba(251, 197, 49, 0.15) 0%, rgba(0, 242, 254, 0.15) 100%); border-color: rgba(251, 197, 49, 0.3); color: var(--accent-gold);">⚙️ GEAR OK</span>';
+      }
+
       // --- Desktop Row HTML ---
       const tr = document.createElement('tr');
       tr.style.cursor = 'pointer';
@@ -587,7 +609,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td><span class="milestone-badge ${milestoneClass}">${escapeHtml(p.milestone)}</span></td>
         <td style="text-align: center;"><span class="badge-count arcade">🎮 ${p.arcadeCount}</span></td>
         <td style="text-align: center;"><span class="badge-count skill">🏆 ${p.skillsCount}</span></td>
-        <td>${p.hasBonus ? '<span class="gear-badge">⚙️ GEAR BONUS</span>' : '<span style="color: var(--text-muted); font-size:0.75rem;">None</span>'}</td>
+        <td>${gearBonusHtml}</td>
         <td>
           <div class="profile-links-container">
             ${profileButtons || '<span style="color: var(--text-muted); font-size:0.75rem;">-</span>'}
@@ -621,16 +643,16 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="milestone-badge ${milestoneClass}" style="transform: scale(0.9); transform-origin: left; width: fit-content;">${escapeHtml(p.milestone)}</span>
           </div>
           <div class="mobile-stat">
-            <span class="mobile-label">GEAR Bonus</span>
-            <span>${p.hasBonus ? '<span class="gear-badge">⚙️ GEAR BONUS</span>' : 'None'}</span>
+            <span class="mobile-label">Bonus GEAR</span>
+            <span>${gearBonusHtml}</span>
           </div>
           <div class="mobile-stat" style="margin-top: 5px;">
-            <span class="mobile-label">Arcade Games</span>
-            <span class="badge-count arcade" style="width: fit-content;">🎮 ${p.arcadeCount} Games</span>
+            <span class="mobile-label">Game Arcade</span>
+            <span class="badge-count arcade" style="width: fit-content;">🎮 ${p.arcadeCount} Game</span>
           </div>
           <div class="mobile-stat" style="margin-top: 5px;">
-            <span class="mobile-label">Skill Badges</span>
-            <span class="badge-count skill" style="width: fit-content;">🏆 ${p.skillsCount} Badges</span>
+            <span class="mobile-label">Badge Keahlian</span>
+            <span class="badge-count skill" style="width: fit-content;">🏆 ${p.skillsCount} Badge</span>
           </div>
         </div>
         <div class="mobile-card-footer">
@@ -642,18 +664,18 @@ document.addEventListener('DOMContentLoaded', () => {
           </button>
         </div>
         <div class="mobile-expanded-content" id="mobile-expanded-content-${rank}">
-          <div class="badge-list-title">Arcade Games (${p.arcadeCount})</div>
+          <div class="badge-list-title">Game Arcade (${p.arcadeCount})</div>
           <div class="badge-tag-list">
             ${p.arcadeList.length > 0 
               ? p.arcadeList.map(b => `<span class="mini-badge-tag arcade-tag">${escapeHtml(b)}</span>`).join('')
-              : '<span style="color: var(--text-muted); font-size: 0.75rem;">Belum menyelesaikan arcade game</span>'
+              : '<span style="color: var(--text-muted); font-size: 0.75rem;">Belum menyelesaikan game arcade</span>'
             }
           </div>
-          <div class="badge-list-title">Skill Badges (${p.skillsCount})</div>
+          <div class="badge-list-title">Badge Keahlian (${p.skillsCount})</div>
           <div class="badge-tag-list">
             ${p.skillsList.length > 0 
               ? p.skillsList.map(b => `<span class="mini-badge-tag skill-tag">${escapeHtml(b)}</span>`).join('')
-              : '<span style="color: var(--text-muted); font-size: 0.75rem;">Belum menyelesaikan skill badge</span>'
+              : '<span style="color: var(--text-muted); font-size: 0.75rem;">Belum menyelesaikan badge keahlian</span>'
             }
           </div>
           <div class="badge-list-title">Verifikasi AI Agent</div>
@@ -704,42 +726,59 @@ document.addEventListener('DOMContentLoaded', () => {
     let targetGames = 0;
     let targetSkills = 0;
 
+    const hasGearBadge = p.gearBadge && p.gearBadge.toLowerCase() !== 'no' && p.gearBadge.toLowerCase() !== 'none' && p.gearBadge.trim() !== '';
+    if (p.hasBonus) {
+      modalGearBadge.textContent = '⚙️ GEAR Ready (+10 Poin)';
+      modalGearBadge.style.display = 'inline-flex';
+      modalGearBadge.style.background = 'linear-gradient(135deg, rgba(57, 255, 20, 0.2) 0%, rgba(0, 242, 254, 0.2) 100%)';
+      modalGearBadge.style.borderColor = 'rgba(57, 255, 20, 0.3)';
+      modalGearBadge.style.color = 'var(--text-primary)';
+    } else if (hasGearBadge) {
+      modalGearBadge.textContent = '⚙️ GEAR OK';
+      modalGearBadge.style.display = 'inline-flex';
+      modalGearBadge.style.background = 'linear-gradient(135deg, rgba(251, 197, 49, 0.15) 0%, rgba(0, 242, 254, 0.15) 100%)';
+      modalGearBadge.style.borderColor = 'rgba(251, 197, 49, 0.3)';
+      modalGearBadge.style.color = 'var(--accent-gold)';
+    } else {
+      modalGearBadge.style.display = 'none';
+    }
+
     if (p.milestone === "None") {
       nextMilestone = "Milestone 1";
       targetGames = 6;
-      targetSkills = 14;
+      targetSkills = 18;
     } else if (p.milestone === "Milestone 1") {
       nextMilestone = "Milestone 2";
       targetGames = 8;
-      targetSkills = 28;
+      targetSkills = 34;
     } else if (p.milestone === "Milestone 2") {
       nextMilestone = "Milestone 3";
       targetGames = 10;
-      targetSkills = 42;
+      targetSkills = 50;
     } else if (p.milestone === "Milestone 3") {
       nextMilestone = "Ultimate Milestone";
       targetGames = 12;
-      targetSkills = 56;
+      targetSkills = 66;
     }
 
     if (nextMilestone !== "") {
       const arcadePerc = Math.min(100, (p.arcadeCount / targetGames) * 100);
       modalArcadeProgressBar.style.width = `${arcadePerc}%`;
-      modalArcadeProgressText.textContent = `${p.arcadeCount} / ${targetGames} Games`;
+      modalArcadeProgressText.textContent = `${p.arcadeCount} / ${targetGames} Game`;
 
       const skillPerc = Math.min(100, (p.skillsCount / targetSkills) * 100);
       modalSkillProgressBar.style.width = `${skillPerc}%`;
-      modalSkillProgressText.textContent = `${p.skillsCount} / ${targetSkills} Badges`;
+      modalSkillProgressText.textContent = `${p.skillsCount} / ${targetSkills} Badge`;
 
       const needGames = Math.max(0, targetGames - p.arcadeCount);
       const needSkills = Math.max(0, targetSkills - p.skillsCount);
-      modalNextMilestoneHint.innerHTML = `Butuh tambahan <strong style="color: var(--accent-cyan); font-family: var(--font-stats);">${needGames} games</strong> dan <strong style="color: var(--accent-pink); font-family: var(--font-stats);">${needSkills} skill badges</strong> untuk mencapai <strong>${nextMilestone}</strong>.`;
+      modalNextMilestoneHint.innerHTML = `Butuh tambahan <strong style="color: var(--accent-cyan); font-family: var(--font-stats);">${needGames} game</strong> dan <strong style="color: var(--accent-pink); font-family: var(--font-stats);">${needSkills} badge keahlian</strong> untuk mencapai <strong>${nextMilestone}</strong>.`;
     } else {
       // Max milestone reached
       modalArcadeProgressBar.style.width = `100%`;
-      modalArcadeProgressText.textContent = `${p.arcadeCount} Games`;
+      modalArcadeProgressText.textContent = `${p.arcadeCount} Game`;
       modalSkillProgressBar.style.width = `100%`;
-      modalSkillProgressText.textContent = `${p.skillsCount} Badges`;
+      modalSkillProgressText.textContent = `${p.skillsCount} Badge`;
       modalNextMilestoneHint.textContent = `🎉 Selamat! Anda telah meraih Ultimate Milestone (Pencapaian Tertinggi).`;
     }
 
@@ -924,13 +963,13 @@ document.addEventListener('DOMContentLoaded', () => {
     table.innerHTML = `
       <thead>
         <tr>
-          <th style="width: 70px; text-align: center;">Rank</th>
+          <th style="width: 70px; text-align: center;">Peringkat</th>
           <th>Nama Peserta</th>
           <th style="width: 100px; text-align: center;">Poin</th>
           <th>Milestone</th>
-          <th style="width: 110px; text-align: center;">Arcade Games</th>
-          <th style="width: 110px; text-align: center;">Skill Badges</th>
-          <th>GEAR Bonus</th>
+          <th style="width: 110px; text-align: center;">Game Arcade</th>
+          <th style="width: 110px; text-align: center;">Badge Keahlian</th>
+          <th>Bonus Milestone (GEAR)</th>
         </tr>
       </thead>
       <tbody>
@@ -944,6 +983,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const milestoneClass = getMilestoneClass(p.milestone);
           
+          const hasGearBadge = p.gearBadge && p.gearBadge.toLowerCase() !== 'no' && p.gearBadge.toLowerCase() !== 'none' && p.gearBadge.trim() !== '';
+          let gearBonusHtml = '<span style="color: var(--text-muted); font-size:0.75rem;">-</span>';
+          if (p.hasBonus) {
+            gearBonusHtml = '<span class="gear-badge" style="transform: scale(0.8); transform-origin: left;">⚙️ Bonus (+10)</span>';
+          } else if (hasGearBadge) {
+            gearBonusHtml = '<span class="gear-badge" style="transform: scale(0.8); transform-origin: left; background: linear-gradient(135deg, rgba(251, 197, 49, 0.15) 0%, rgba(0, 242, 254, 0.15) 100%); border-color: rgba(251, 197, 49, 0.3); color: var(--accent-gold);">⚙️ GEAR OK</span>';
+          }
+          
           return `
             <tr>
               <td style="text-align: center;"><span class="rank-badge ${rankClass}" style="transform: scale(0.85);">${rank}</span></td>
@@ -952,7 +999,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <td><span class="milestone-badge ${milestoneClass}" style="transform: scale(0.8); transform-origin: left;">${escapeHtml(p.milestone)}</span></td>
               <td style="text-align: center;"><span class="badge-count arcade" style="font-size: 0.8rem;">🎮 ${p.arcadeCount}</span></td>
               <td style="text-align: center;"><span class="badge-count skill" style="font-size: 0.8rem;">🏆 ${p.skillsCount}</span></td>
-              <td>${p.hasBonus ? '<span class="gear-badge" style="transform: scale(0.8); transform-origin: left;">⚙️ GEAR</span>' : '<span style="color: var(--text-muted); font-size:0.75rem;">-</span>'}</td>
+              <td>${gearBonusHtml}</td>
             </tr>
           `;
         }).join('')}
@@ -1045,13 +1092,13 @@ document.addEventListener('DOMContentLoaded', () => {
     table.innerHTML = `
       <thead>
         <tr>
-          <th style="width: 70px; text-align: center; border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Rank</th>
+          <th style="width: 70px; text-align: center; border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Peringkat</th>
           <th style="border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Nama Peserta</th>
           <th style="width: 90px; text-align: center; border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Poin</th>
           <th style="border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Milestone</th>
-          <th style="width: 120px; text-align: center; border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Games</th>
-          <th style="width: 120px; text-align: center; border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Skills</th>
-          <th style="border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">GEAR Bonus</th>
+          <th style="width: 120px; text-align: center; border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Game</th>
+          <th style="width: 120px; text-align: center; border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Badge Keahlian</th>
+          <th style="border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Bonus Milestone (GEAR)</th>
         </tr>
       </thead>
       <tbody>
@@ -1064,6 +1111,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const milestoneClass = getMilestoneClass(p.milestone);
           
+          const hasGearBadge = p.gearBadge && p.gearBadge.toLowerCase() !== 'no' && p.gearBadge.toLowerCase() !== 'none' && p.gearBadge.trim() !== '';
+          let gearBonusHtml = '<span style="color: var(--text-muted); font-size: 0.75rem;">-</span>';
+          if (p.hasBonus) {
+            gearBonusHtml = '<span class="gear-badge">⚙️ Bonus (+10)</span>';
+          } else if (hasGearBadge) {
+            gearBonusHtml = '<span class="gear-badge" style="background: linear-gradient(135deg, rgba(251, 197, 49, 0.15) 0%, rgba(0, 242, 254, 0.15) 100%); border-color: rgba(251, 197, 49, 0.3); color: var(--accent-gold);">⚙️ GEAR OK</span>';
+          }
+          
           return `
             <tr>
               <td style="text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 12px 15px;"><span class="rank-badge ${rankClass}" style="transform: scale(0.85);">${rank}</span></td>
@@ -1072,7 +1127,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <td style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 12px 15px;"><span class="milestone-badge ${milestoneClass}" style="transform: scale(0.85); transform-origin: left;">${escapeHtml(p.milestone)}</span></td>
               <td style="text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 12px 15px;"><span class="badge-count arcade">🎮 ${p.arcadeCount}</span></td>
               <td style="text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 12px 15px;"><span class="badge-count skill">🏆 ${p.skillsCount}</span></td>
-              <td style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 12px 15px;">${p.hasBonus ? '<span class="gear-badge">⚙️ GEAR BONUS</span>' : '<span style="color: var(--text-muted); font-size: 0.75rem;">-</span>'}</td>
+              <td style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 12px 15px;">${gearBonusHtml}</td>
             </tr>
           `;
         }).join('')}
@@ -1284,8 +1339,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const arcadeCount = arcadeList.length;
     const skillsCount = skillsList.length;
-    const points = arcadeCount * 1 + Math.floor(skillsCount / 2) + (hasBonus ? 10 : 0);
     const milestone = getCalculatedMilestone(arcadeCount, skillsCount);
+    const milestoneBonus = getMilestoneBonus(milestone);
+    const points = arcadeCount * 1 + Math.floor(skillsCount / 2) + milestoneBonus + (hasBonus ? 10 : 0);
 
     return {
       arcadeCount,
@@ -1447,8 +1503,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const arcadeList = processedBadges.filter(b => b.type === 'arcade').map(b => b.title);
     const skillsList = processedBadges.filter(b => b.type === 'skill').map(b => b.title);
-    const livePoints = arcadeList.length * 1 + Math.floor(skillsList.length / 2) + (activeModalParticipant.hasBonus ? 10 : 0);
     const liveMilestone = getCalculatedMilestone(arcadeList.length, skillsList.length);
+    const liveMilestoneBonus = getMilestoneBonus(liveMilestone);
+    const livePoints = arcadeList.length * 1 + Math.floor(skillsList.length / 2) + liveMilestoneBonus + (activeModalParticipant.hasBonus ? 10 : 0);
 
     tempLiveStats = {
       arcadeCount: arcadeList.length,
