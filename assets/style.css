@@ -950,6 +950,34 @@ select.form-control option {
   animation: toastIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
+.status-toast.success {
+  border-color: var(--accent-green);
+  box-shadow: 0 0 15px var(--accent-green-glow);
+}
+
+.status-toast.success .spinner {
+  border-top-color: var(--accent-green);
+}
+
+.status-toast.warning {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 15px var(--accent-gold-glow);
+}
+
+.status-toast.warning .spinner {
+  border-top-color: var(--accent-gold);
+}
+
+.status-toast.error {
+  border-color: var(--accent-pink);
+  box-shadow: 0 0 15px var(--accent-pink-glow);
+}
+
+.status-toast.error .spinner {
+  border-top-color: var(--accent-pink);
+}
+
+
 @keyframes toastIn {
   from { transform: translateY(50px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }

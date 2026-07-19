@@ -820,12 +820,18 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- 6. Export Functions ---
 
   // Trigger Toast Notification
-  function showToast(message, showSpinner = true, duration = 0) {
+  function showToast(message, showSpinner = true, duration = 0, toast_type = '') {
     statusToastText.textContent = message;
     const spinner = statusToast.querySelector('.spinner');
     if (spinner) {
       spinner.style.display = showSpinner ? 'block' : 'none';
     }
+    
+    statusToast.classList.remove('success', 'warning', 'error');
+    if (toast_type) {
+      statusToast.classList.add(toast_type);
+    }
+    
     statusToast.style.display = 'flex';
     
     if (duration > 0) {
@@ -1307,12 +1313,14 @@ document.addEventListener('DOMContentLoaded', () => {
     syncLiveBtn.textContent = 'Syncing...';
     progressContainer.style.display = 'block';
 
-    let completed = 0;
-    const total = participantsWithUrls.length;
-    const concurrency = 5;
+    let sync_completed = 0;
+    let sync_success_count = 0;
+    let sync_fail_count = 0;
+    const total_participants = participantsWithUrls.length;
+    const sync_concurrency = 5;
 
-    for (let i = 0; i < total; i += concurrency) {
-      const batch = participantsWithUrls.slice(i, i + concurrency);
+    for (let i = 0; i < total_participants; i += sync_concurrency) {
+      const batch = participantsWithUrls.slice(i, i + sync_concurrency);
       await Promise.all(batch.map(async (p) => {
         try {
           const stats = await fetchAndParseProfile(p.skillsUrl, p.hasBonus);
@@ -1336,13 +1344,17 @@ document.addEventListener('DOMContentLoaded', () => {
             p.diffCount = (stats.arcadeCount + stats.skillsCount) - (p.csvArcadeCount + p.csvSkillsCount);
             p.diffPoints = stats.points - p.csvPoints;
             p.lastSynced = profileCache[p.skillsUrl].lastSynced;
+            sync_success_count++;
+          } else {
+            sync_fail_count++;
           }
         } catch (err) {
           console.error(`Gagal sinkronisasi profil ${p.name}:`, err);
+          sync_fail_count++;
         } finally {
-          completed++;
-          const percentage = Math.round((completed / total) * 100);
-          progressText.textContent = `Menyelaraskan profil: ${completed} / ${total} peserta...`;
+          sync_completed++;
+          const percentage = Math.round((sync_completed / total_participants) * 100);
+          progressText.textContent = `Menyelaraskan profil: ${sync_completed} / ${total_participants} peserta...`;
           progressPercent.textContent = `${percentage}%`;
           progressBar.style.width = `${percentage}%`;
         }
@@ -1352,7 +1364,14 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('arcade_profile_cache', JSON.stringify(profileCache));
     updateLeaderboard();
     
-    showToast('Sinkronisasi profil selesai!', false, 2000);
+    if (sync_fail_count === total_participants) {
+      showToast('Sinkronisasi gagal untuk semua profil! Periksa CSP / koneksi.', false, 3500, 'error');
+    } else if (sync_fail_count > 0) {
+      showToast(`Sinkronisasi selesai! ${sync_success_count} berhasil, ${sync_fail_count} gagal.`, false, 3500, 'warning');
+    } else {
+      showToast('Sinkronisasi profil selesai!', false, 2000, 'success');
+    }
+    
     setTimeout(() => {
       progressContainer.style.display = 'none';
       syncLiveBtn.disabled = false;
