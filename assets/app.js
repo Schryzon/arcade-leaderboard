@@ -1270,9 +1270,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- 7. Live Profile Synchronizer & Concurrency Queue ---
 
+  // Helper to ensure target URL is fetched in English
+  function forceEnglishLocale(url) {
+    if (!url) return '';
+    try {
+      const parsedUrl = new URL(url);
+      parsedUrl.searchParams.set('locale', 'en');
+      return parsedUrl.toString();
+    } catch (e) {
+      if (url.includes('?')) {
+        if (url.includes('locale=')) {
+          return url.replace(/locale=[^&]+/, 'locale=en');
+        }
+        return url + '&locale=en';
+      }
+      return url + '?locale=en';
+    }
+  }
+
   async function fetchAndParseProfile(profileUrl, hasBonus) {
     if (!profileUrl) return null;
-    const proxyUrl = 'https://corsproxy.io/?url=' + encodeURIComponent(profileUrl);
+    const targetUrl = forceEnglishLocale(profileUrl);
+    const proxyUrl = 'https://corsproxy.io/?url=' + encodeURIComponent(targetUrl);
     const res = await fetch(proxyUrl);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const htmlText = await res.text();
@@ -1301,7 +1320,9 @@ document.addEventListener('DOMContentLoaded', () => {
         type = customClassifications[title];
       } else {
         const isArcade = href.includes('/games/');
-        const isSkill = description.includes('skill badge');
+        const isSkill = description.includes('skill badge') || 
+                        description.includes('badge keahlian') || 
+                        description.includes('lencana keahlian');
         if (isArcade) type = 'arcade';
         else if (isSkill) type = 'skill';
       }
@@ -1424,7 +1445,8 @@ document.addEventListener('DOMContentLoaded', () => {
     modalLiveSyncAction.style.display = 'none';
 
     try {
-      const proxyUrl = 'https://corsproxy.io/?url=' + encodeURIComponent(activeModalParticipant.skillsUrl);
+      const targetUrl = forceEnglishLocale(activeModalParticipant.skillsUrl);
+      const proxyUrl = 'https://corsproxy.io/?url=' + encodeURIComponent(targetUrl);
       const res = await fetch(proxyUrl);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const htmlText = await res.text();
@@ -1467,7 +1489,9 @@ document.addEventListener('DOMContentLoaded', () => {
         type = customClassifications[badge.title];
       } else {
         const isArcade = badge.href.includes('/games/');
-        const isSkill = badge.description.includes('skill badge');
+        const isSkill = badge.description.includes('skill badge') || 
+                        badge.description.includes('badge keahlian') || 
+                        badge.description.includes('lencana keahlian');
         if (isArcade) type = 'arcade';
         else if (isSkill) type = 'skill';
       }
