@@ -583,11 +583,15 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // GEAR Bonus and Badge Status Logic
-      const hasGearBadge = p.gearBadge && p.gearBadge.toLowerCase() !== 'no' && p.gearBadge.toLowerCase() !== 'none' && p.gearBadge.trim() !== '';
+      const isVerified = p.verifyStatus && 
+                         p.verifyStatus.toLowerCase() !== 'not yet submitted' && 
+                         p.verifyStatus.toLowerCase() !== 'no' && 
+                         p.verifyStatus.toLowerCase() !== 'none' && 
+                         p.verifyStatus.trim() !== '';
       let gearBonusHtml = '<span style="color: var(--text-muted); font-size:0.75rem;">-</span>';
       if (p.hasBonus) {
         gearBonusHtml = '<span class="gear-badge">⚙️ Bonus (+10)</span>';
-      } else if (hasGearBadge) {
+      } else if (isVerified) {
         gearBonusHtml = '<span class="gear-badge" style="background: linear-gradient(135deg, rgba(251, 197, 49, 0.15) 0%, rgba(0, 242, 254, 0.15) 100%); border-color: rgba(251, 197, 49, 0.3); color: var(--accent-gold);">⚙️ GEAR OK</span>';
       }
 
@@ -726,14 +730,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let targetGames = 0;
     let targetSkills = 0;
 
-    const hasGearBadge = p.gearBadge && p.gearBadge.toLowerCase() !== 'no' && p.gearBadge.toLowerCase() !== 'none' && p.gearBadge.trim() !== '';
+    const isVerified = p.verifyStatus && 
+                       p.verifyStatus.toLowerCase() !== 'not yet submitted' && 
+                       p.verifyStatus.toLowerCase() !== 'no' && 
+                       p.verifyStatus.toLowerCase() !== 'none' && 
+                       p.verifyStatus.trim() !== '';
     if (p.hasBonus) {
       modalGearBadge.textContent = '⚙️ GEAR Ready (+10 Poin)';
       modalGearBadge.style.display = 'inline-flex';
       modalGearBadge.style.background = 'linear-gradient(135deg, rgba(57, 255, 20, 0.2) 0%, rgba(0, 242, 254, 0.2) 100%)';
       modalGearBadge.style.borderColor = 'rgba(57, 255, 20, 0.3)';
       modalGearBadge.style.color = 'var(--text-primary)';
-    } else if (hasGearBadge) {
+    } else if (isVerified) {
       modalGearBadge.textContent = '⚙️ GEAR OK';
       modalGearBadge.style.display = 'inline-flex';
       modalGearBadge.style.background = 'linear-gradient(135deg, rgba(251, 197, 49, 0.15) 0%, rgba(0, 242, 254, 0.15) 100%)';
@@ -983,11 +991,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const milestoneClass = getMilestoneClass(p.milestone);
           
-          const hasGearBadge = p.gearBadge && p.gearBadge.toLowerCase() !== 'no' && p.gearBadge.toLowerCase() !== 'none' && p.gearBadge.trim() !== '';
+          const isVerified = p.verifyStatus && 
+                             p.verifyStatus.toLowerCase() !== 'not yet submitted' && 
+                             p.verifyStatus.toLowerCase() !== 'no' && 
+                             p.verifyStatus.toLowerCase() !== 'none' && 
+                             p.verifyStatus.trim() !== '';
           let gearBonusHtml = '<span style="color: var(--text-muted); font-size:0.75rem;">-</span>';
           if (p.hasBonus) {
             gearBonusHtml = '<span class="gear-badge" style="transform: scale(0.8); transform-origin: left;">⚙️ Bonus (+10)</span>';
-          } else if (hasGearBadge) {
+          } else if (isVerified) {
             gearBonusHtml = '<span class="gear-badge" style="transform: scale(0.8); transform-origin: left; background: linear-gradient(135deg, rgba(251, 197, 49, 0.15) 0%, rgba(0, 242, 254, 0.15) 100%); border-color: rgba(251, 197, 49, 0.3); color: var(--accent-gold);">⚙️ GEAR OK</span>';
           }
           
@@ -1111,11 +1123,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const milestoneClass = getMilestoneClass(p.milestone);
           
-          const hasGearBadge = p.gearBadge && p.gearBadge.toLowerCase() !== 'no' && p.gearBadge.toLowerCase() !== 'none' && p.gearBadge.trim() !== '';
+          const isVerified = p.verifyStatus && 
+                             p.verifyStatus.toLowerCase() !== 'not yet submitted' && 
+                             p.verifyStatus.toLowerCase() !== 'no' && 
+                             p.verifyStatus.toLowerCase() !== 'none' && 
+                             p.verifyStatus.trim() !== '';
           let gearBonusHtml = '<span style="color: var(--text-muted); font-size: 0.75rem;">-</span>';
           if (p.hasBonus) {
             gearBonusHtml = '<span class="gear-badge">⚙️ Bonus (+10)</span>';
-          } else if (hasGearBadge) {
+          } else if (isVerified) {
             gearBonusHtml = '<span class="gear-badge" style="background: linear-gradient(135deg, rgba(251, 197, 49, 0.15) 0%, rgba(0, 242, 254, 0.15) 100%); border-color: rgba(251, 197, 49, 0.3); color: var(--accent-gold);">⚙️ GEAR OK</span>';
           }
           
