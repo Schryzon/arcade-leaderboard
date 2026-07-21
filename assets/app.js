@@ -1012,7 +1012,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dateStr = now.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
     
     footer.innerHTML = `
-      <div>Laporan Leaderboard Google Cloud Arcade Facilitator • ${dateStr}</div>
+      <div>Laporan Leaderboard Google Cloud Arcade Facilitator • ${dateStr} • Created by Schryzon</div>
       <div class="export-slide-footer-logo">Google Cloud Arcade</div>
     `;
     slide.appendChild(footer);
@@ -1139,7 +1139,7 @@ document.addEventListener('DOMContentLoaded', () => {
     footer.style.fontFamily = 'var(--font-stats)';
     const dateStr = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
     footer.innerHTML = `
-      <div>Laporan Leaderboard Lengkap • ${dateStr}</div>
+      <div>Laporan Leaderboard Lengkap • ${dateStr} • Created by Schryzon</div>
       <div style="font-family: var(--font-retro); color: var(--accent-cyan); font-size: 0.7rem;">Google Cloud Arcade</div>
     `;
     container.appendChild(footer);
