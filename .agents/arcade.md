@@ -25,18 +25,18 @@ Points are computed from the CSV columns using the following formula:
 * Every Arcade Game badge completed awards `1 Point`.
 * Every 2 Skill Badges completed award `1 Point` (fractional values are discarded using `Math.floor`).
 * Reaching different milestone levels awards additional milestone bonus points (non-cumulative, only the highest achieved milestone counts):
-  * **Milestone 1**: +5 Points
-  * **Milestone 2**: +15 Points
-  * **Milestone 3**: +25 Points
-  * **Ultimate Milestone**: +35 Points
+  * **Milestone 1**: +7 Points
+  * **Milestone 2**: +18 Points
+  * **Milestone 3**: +29 Points
+  * **Ultimate Milestone**: +40 Points
 * Earning the GEAR Bonus Milestone (Bonus Milestone yang diraih) awards `10 Points`.
 
 ### 2. Milestone Targets
 Participants progress through 4 milestone levels based on the completed badge counts:
-* **Milestone 1**: 6 Arcade Games AND 18 Skill Badges
-* **Milestone 2**: 8 Arcade Games AND 34 Skill Badges
-* **Milestone 3**: 10 Arcade Games AND 50 Skill Badges
-* **Ultimate Milestone**: 12 Arcade Games AND 66 Skill Badges
+* **Milestone 1**: 6 Arcade Games AND 14 Skill Badges
+* **Milestone 2**: 8 Arcade Games AND 28 Skill Badges
+* **Milestone 3**: 10 Arcade Games AND 42 Skill Badges
+* **Ultimate Milestone**: 12 Arcade Games AND 56 Skill Badges
 
 ## Visual Theme & Layout
 

@@ -27,17 +27,17 @@ The application is deployed and accessible at:
   * **Arcade Game Badge** = `1 Point`
   * **Skill Badge** = `0.5 Points` (Every 2 badges = `1 Point`, rounded down using `Math.floor`)
   * **Milestone Tier Bonus** = Dynamic bonus points based on the highest achieved milestone (non-cumulative):
-    * **Milestone 1**: `+5 Points`
-    * **Milestone 2**: `+15 Points`
-    * **Milestone 3**: `+25 Points`
-    * **Ultimate Milestone**: `+35 Points`
+    * **Milestone 1**: `+7 Points`
+    * **Milestone 2**: `+18 Points`
+    * **Milestone 3**: `+29 Points`
+    * **Ultimate Milestone**: `+40 Points`
   * **GEAR Bonus Milestone** = `10 Points` (if marked "Yes" in the `Bonus Milestone yang diraih` CSV column)
   * **Total Points** = `ArcadeGames + floor(SkillBadges / 2) + MilestoneBonus + (BonusMilestone ? 10 : 0)`
 * **Milestone Progress Tracking**:
-  * **Milestone 1**: 6 Arcade Games & 18 Skill Badges
-  * **Milestone 2**: 8 Arcade Games & 34 Skill Badges
-  * **Milestone 3**: 10 Arcade Games & 50 Skill Badges
-  * **Ultimate Milestone**: 12 Arcade Games & 66 Skill Badges
+  * **Milestone 1**: 6 Arcade Games & 14 Skill Badges
+  * **Milestone 2**: 8 Arcade Games & 28 Skill Badges
+  * **Milestone 3**: 10 Arcade Games & 42 Skill Badges
+  * **Ultimate Milestone**: 12 Arcade Games & 56 Skill Badges
   * Provides dynamic "Needed Badges" feedback and individual progress gauges.
 * **GEAR Status Indication**: Displays whether a participant's GEAR badge is verified (even before the milestone bonus points are active), letting them know their badge submission is correct.
 * **Responsive Visuals**: Adaptable design optimized for both desktop monitors (detailed table views) and mobile screens (compact click-to-expand scorecard cards).
