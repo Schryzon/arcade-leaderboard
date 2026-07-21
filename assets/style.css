@@ -924,6 +924,26 @@ select.form-control option {
   transition: width 0.5s ease-in-out;
 }
 
+.progress-bar.milestone-pb-1 {
+  background: linear-gradient(90deg, #1e3799, var(--accent-cyan));
+  box-shadow: 0 0 8px rgba(0, 242, 254, 0.3);
+}
+
+.progress-bar.milestone-pb-2 {
+  background: linear-gradient(90deg, #f39c12, var(--accent-gold));
+  box-shadow: 0 0 8px rgba(251, 197, 49, 0.3);
+}
+
+.progress-bar.milestone-pb-3 {
+  background: linear-gradient(90deg, #27ae60, var(--accent-green));
+  box-shadow: 0 0 8px rgba(57, 255, 20, 0.3);
+}
+
+.progress-bar.milestone-pb-4 {
+  background: linear-gradient(90deg, #8e44ad, var(--accent-pink));
+  box-shadow: 0 0 8px rgba(255, 0, 127, 0.3);
+}
+
 .progress-labels {
   display: flex;
   justify-content: space-between;

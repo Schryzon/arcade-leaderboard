@@ -98,9 +98,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Stats Elements
   const statTotalParticipants = document.getElementById('stat-total-participants');
-  const statUltimateCount = document.getElementById('stat-ultimate-count');
+  const statTotalGames = document.getElementById('stat-total-games');
   const statBonusCount = document.getElementById('stat-bonus-count');
-  const statAveragePoints = document.getElementById('stat-average-points');
+  const statTotalSkills = document.getElementById('stat-total-skills');
 
   // Filters Elements
   const searchInput = document.getElementById('search-input');
@@ -459,18 +459,18 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getCalculatedMilestone(games, skills) {
-    if (games >= 12 && skills >= 66) return "Ultimate Milestone";
-    if (games >= 10 && skills >= 50) return "Milestone 3";
-    if (games >= 8 && skills >= 34) return "Milestone 2";
-    if (games >= 6 && skills >= 18) return "Milestone 1";
+    if (games >= 12 && skills >= 56) return "Ultimate Milestone";
+    if (games >= 10 && skills >= 42) return "Milestone 3";
+    if (games >= 8 && skills >= 28) return "Milestone 2";
+    if (games >= 6 && skills >= 14) return "Milestone 1";
     return "None";
   }
 
   function getMilestoneBonus(milestone) {
-    if (milestone === "Ultimate Milestone") return 35;
-    if (milestone === "Milestone 3") return 25;
-    if (milestone === "Milestone 2") return 15;
-    if (milestone === "Milestone 1") return 5;
+    if (milestone === "Ultimate Milestone") return 40;
+    if (milestone === "Milestone 3") return 29;
+    if (milestone === "Milestone 2") return 18;
+    if (milestone === "Milestone 1") return 7;
     return 0;
   }
 
@@ -537,18 +537,34 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderStats() {
     statTotalParticipants.textContent = parsedParticipants.length;
     
-    const ultimateCount = parsedParticipants.filter(p => p.milestone === 'Ultimate Milestone').length;
-    statUltimateCount.textContent = ultimateCount;
+    const totalGames = parsedParticipants.reduce((sum, p) => sum + p.arcadeCount, 0);
+    const totalSkills = parsedParticipants.reduce((sum, p) => sum + p.skillsCount, 0);
+    
+    statTotalGames.textContent = totalGames;
+    statTotalSkills.textContent = totalSkills;
 
     const bonusCount = parsedParticipants.filter(p => p.hasBonus).length;
     statBonusCount.textContent = bonusCount;
 
-    if (parsedParticipants.length > 0) {
-      const totalPoints = parsedParticipants.reduce((sum, p) => sum + p.points, 0);
-      const avg = totalPoints / parsedParticipants.length;
-      statAveragePoints.textContent = avg.toFixed(1);
-    } else {
-      statAveragePoints.textContent = '0';
+    // Render program-wide milestone tracker
+    renderMilestoneTracker(totalGames, totalSkills);
+  }
+
+  function renderMilestoneTracker(totalGames, totalSkills) {
+    const totalActual = totalGames + totalSkills;
+    const targets = [500, 800, 1150, 1500];
+    
+    for (let i = 1; i <= 4; i++) {
+      const target = targets[i - 1];
+      const percent = Math.min(100, Math.floor((totalActual / target) * 100));
+      
+      const pb = document.getElementById(`milestone-progress-bar-${i}`);
+      const percentText = document.getElementById(`milestone-progress-percent-${i}`);
+      const ratioText = document.getElementById(`milestone-progress-ratio-${i}`);
+      
+      if (pb) pb.style.width = `${percent}%`;
+      if (percentText) percentText.textContent = `${percent}% Completed`;
+      if (ratioText) ratioText.textContent = `${totalActual}/${target}`;
     }
   }
 
@@ -722,22 +738,26 @@ document.addEventListener('DOMContentLoaded', () => {
       modalGearBadge.style.display = 'none';
     }
 
+    let nextMilestone = "";
+    let targetGames = 0;
+    let targetSkills = 0;
+
     if (p.milestone === "None") {
       nextMilestone = "Milestone 1";
       targetGames = 6;
-      targetSkills = 18;
+      targetSkills = 14;
     } else if (p.milestone === "Milestone 1") {
       nextMilestone = "Milestone 2";
       targetGames = 8;
-      targetSkills = 34;
+      targetSkills = 28;
     } else if (p.milestone === "Milestone 2") {
       nextMilestone = "Milestone 3";
       targetGames = 10;
-      targetSkills = 50;
+      targetSkills = 42;
     } else if (p.milestone === "Milestone 3") {
       nextMilestone = "Ultimate Milestone";
       targetGames = 12;
-      targetSkills = 66;
+      targetSkills = 56;
     }
 
     if (nextMilestone !== "") {
@@ -942,13 +962,13 @@ document.addEventListener('DOMContentLoaded', () => {
     table.innerHTML = `
       <thead>
         <tr>
-          <th style="width: 70px; text-align: center;">Peringkat</th>
-          <th>Nama Peserta</th>
+          <th style="width: 70px; text-align: center;">#</th>
+          <th>Peserta</th>
           <th style="width: 100px; text-align: center;">Poin</th>
           <th>Milestone</th>
-          <th style="width: 110px; text-align: center;">Game Arcade</th>
-          <th style="width: 110px; text-align: center;">Badge Keahlian</th>
-          <th>Bonus Milestone (GEAR)</th>
+          <th style="width: 110px; text-align: center;">Game</th>
+          <th style="width: 110px; text-align: center;">Skill</th>
+          <th>GEAR</th>
         </tr>
       </thead>
       <tbody>
@@ -1042,16 +1062,16 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="stat-value" style="font-size: 1.5rem;">${parsedParticipants.length}</div>
       </div>
       <div class="stat-card gold">
-        <div class="stat-label">Ultimate Milestone</div>
-        <div class="stat-value" style="font-size: 1.5rem;">${parsedParticipants.filter(p => p.milestone === 'Ultimate Milestone').length}</div>
+        <div class="stat-label">Total Game Badge</div>
+        <div class="stat-value" style="font-size: 1.5rem;">${parsedParticipants.reduce((sum, p) => sum + p.arcadeCount, 0)}</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">Total Skill Badge</div>
+        <div class="stat-value" style="font-size: 1.5rem;">${parsedParticipants.reduce((sum, p) => sum + p.skillsCount, 0)}</div>
       </div>
       <div class="stat-card pink">
         <div class="stat-label">GEAR Bonus</div>
         <div class="stat-value" style="font-size: 1.5rem;">${parsedParticipants.filter(p => p.hasBonus).length}</div>
-      </div>
-      <div class="stat-card green">
-        <div class="stat-label">Rata-rata Poin</div>
-        <div class="stat-value" style="font-size: 1.5rem;">${statAveragePoints.textContent}</div>
       </div>
     `;
     container.appendChild(summary);
@@ -1068,13 +1088,13 @@ document.addEventListener('DOMContentLoaded', () => {
     table.innerHTML = `
       <thead>
         <tr>
-          <th style="width: 70px; text-align: center; border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Peringkat</th>
-          <th style="border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Nama Peserta</th>
+          <th style="width: 70px; text-align: center; border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">#</th>
+          <th style="border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Peserta</th>
           <th style="width: 90px; text-align: center; border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Poin</th>
           <th style="border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Milestone</th>
           <th style="width: 120px; text-align: center; border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Game</th>
-          <th style="width: 120px; text-align: center; border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Badge Keahlian</th>
-          <th style="border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Bonus Milestone (GEAR)</th>
+          <th style="width: 120px; text-align: center; border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Skill</th>
+          <th style="border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">GEAR</th>
         </tr>
       </thead>
       <tbody>
