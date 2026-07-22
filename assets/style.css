@@ -1235,6 +1235,12 @@ select.form-control option {
   background: rgba(255, 255, 255, 0.1);
 }
 
+.live-badge-type-toggle.invalid-date {
+  background: rgba(255, 56, 56, 0.1);
+  color: #ff3838;
+  border: 1px solid rgba(255, 56, 56, 0.3);
+}
+
 .diff-badge {
   display: inline-block;
   font-size: 0.7rem;

@@ -88,6 +88,35 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${year}${month}${day}_${hour}${minute}${second}`;
   }
 
+  // Validate if a badge's earned date string falls within the valid 2026 program window
+  // Valid range: 13 July 2026 (10 AM) to 14 September 2026 (23:59) GMT+7
+  function isBadgeDateValid(earnedText) {
+    if (!earnedText) return false;
+    
+    // Clean up spaces and word "Earned"
+    let clean = earnedText.replace(/Earned/gi, '').replace(/\s+/g, ' ').trim();
+    if (!clean) return false;
+    
+    // Normalize EDT/EST timezone abbreviation to numeric offsets for reliable cross-browser parsing
+    let normalized = clean;
+    if (normalized.endsWith('EDT')) {
+      normalized = normalized.slice(0, -3).trim() + ' GMT-0400';
+    } else if (normalized.endsWith('EST')) {
+      normalized = normalized.slice(0, -3).trim() + ' GMT-0500';
+    }
+    
+    const timestamp = Date.parse(normalized);
+    if (isNaN(timestamp)) {
+      console.warn('Failed to parse badge date:', earnedText, 'Normalized as:', normalized);
+      return false;
+    }
+    
+    const rangeStart = Date.parse('2026-07-13T10:00:00+07:00'); // 1783911600000
+    const rangeEnd = Date.parse('2026-09-14T23:59:59+07:00');   // 1789405199000
+    
+    return timestamp >= rangeStart && timestamp <= rangeEnd;
+  }
+
   // Cache DOM Elements
   const dropzone = document.getElementById('dropzone');
   const fileInput = document.getElementById('csv-file-input');
@@ -1330,6 +1359,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const title = titleEl ? titleEl.textContent.trim() : '';
       if (!title) return;
 
+      const earnedEl = badgeEl.querySelector('.ql-body-medium.l-mbs');
+      const earnedText = earnedEl ? earnedEl.textContent.trim() : '';
+      if (!isBadgeDateValid(earnedText)) return;
+
       const dialogId = badgeEl.querySelector('ql-button') ? badgeEl.querySelector('ql-button').getAttribute('modal') : '';
       const dialog = dialogId ? doc.getElementById(dialogId) : null;
       
@@ -1484,13 +1517,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const title = titleEl ? titleEl.textContent.trim() : '';
         if (!title) return;
 
+        const earnedEl = badgeEl.querySelector('.ql-body-medium.l-mbs');
+        const earnedText = earnedEl ? earnedEl.textContent.trim() : '';
+
         const dialogId = badgeEl.querySelector('ql-button') ? badgeEl.querySelector('ql-button').getAttribute('modal') : '';
         const dialog = dialogId ? doc.getElementById(dialogId) : null;
         const learnMoreBtn = dialog ? dialog.querySelector('ql-button[slot="action"]') : null;
         const href = learnMoreBtn ? (learnMoreBtn.getAttribute('href') || '') : '';
         const description = dialog ? (dialog.querySelector('p') ? dialog.querySelector('p').textContent.toLowerCase() : '') : '';
 
-        rawBadges.push({ title, href, description });
+        rawBadges.push({ title, href, description, earnedText });
       });
 
       renderLiveVerifyList(rawBadges);
@@ -1507,7 +1543,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const processedBadges = rawBadges.map(badge => {
       let type = 'ignored';
-      if (customClassifications[badge.title]) {
+      if (!isBadgeDateValid(badge.earnedText)) {
+        type = 'invalid-date';
+      } else if (customClassifications[badge.title]) {
         type = customClassifications[badge.title];
       } else {
         const isArcade = badge.href.includes('/games/');
@@ -1517,7 +1555,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isArcade) type = 'arcade';
         else if (isSkill) type = 'skill';
       }
-      return { title: badge.title, type };
+      return { title: badge.title, type, earnedText: badge.earnedText };
     });
 
     const arcadeList = processedBadges.filter(b => b.type === 'arcade').map(b => b.title);
@@ -1574,6 +1612,9 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (b.type === 'skill') {
         btnText = '🏆 Skill';
         btnClass = 'skill';
+      } else if (b.type === 'invalid-date') {
+        btnText = '📅 Invalid Date';
+        btnClass = 'invalid-date';
       }
 
       row.innerHTML = `
@@ -1582,18 +1623,24 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
 
       const toggleBtn = row.querySelector('.live-badge-type-toggle');
-      toggleBtn.addEventListener('click', () => {
-        const currentType = b.type;
-        let nextType = 'ignored';
-        if (currentType === 'ignored') nextType = 'arcade';
-        else if (currentType === 'arcade') nextType = 'skill';
-        else if (currentType === 'skill') nextType = 'ignored';
+      if (b.type === 'invalid-date') {
+        toggleBtn.disabled = true;
+        toggleBtn.style.cursor = 'not-allowed';
+        toggleBtn.style.opacity = '0.6';
+      } else {
+        toggleBtn.addEventListener('click', () => {
+          const currentType = b.type;
+          let nextType = 'ignored';
+          if (currentType === 'ignored') nextType = 'arcade';
+          else if (currentType === 'arcade') nextType = 'skill';
+          else if (currentType === 'skill') nextType = 'ignored';
 
-        customClassifications[b.title] = nextType;
-        localStorage.setItem('arcade_custom_badge_classifications', JSON.stringify(customClassifications));
-        
-        renderLiveVerifyList(rawBadges);
-      });
+          customClassifications[b.title] = nextType;
+          localStorage.setItem('arcade_custom_badge_classifications', JSON.stringify(customClassifications));
+          
+          renderLiveVerifyList(rawBadges);
+        });
+      }
 
       modalLiveBadgeList.appendChild(row);
     });
