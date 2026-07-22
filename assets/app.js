@@ -1293,18 +1293,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // Helper to ensure target URL is fetched in English
   function forceEnglishLocale(url) {
     if (!url) return '';
+    const cacheBuster = `_t=${new Date().getTime()}`;
     try {
       const parsedUrl = new URL(url);
       parsedUrl.searchParams.set('locale', 'en');
+      parsedUrl.searchParams.set('_t', new Date().getTime());
       return parsedUrl.toString();
     } catch (e) {
       if (url.includes('?')) {
         if (url.includes('locale=')) {
-          return url.replace(/locale=[^&]+/, 'locale=en');
+          return url.replace(/locale=[^&]+/, 'locale=en') + '&' + cacheBuster;
         }
-        return url + '&locale=en';
+        return url + '&locale=en&' + cacheBuster;
       }
-      return url + '?locale=en';
+      return url + '?locale=en&' + cacheBuster;
     }
   }
 
