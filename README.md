@@ -39,10 +39,10 @@ The application is deployed and accessible at:
   * **Ultimate Milestone**: 12 Arcade Games & 56 Skill Badges
   * Evaluated per participant in table, mobile cards, and detail modal with dynamic "Needed Badges" feedback.
 * **Prize Tiers System**:
-  * **★ Arcade Trooper**: `50 Points`
-  * **★★ Arcade Ranger**: `75 Points`
-  * **★★★ Arcade Champion**: `95 Points`
-  * **★★★★ Arcade Legend**: `120 Points`
+  * **★ Trooper**: `50 Points`
+  * **★★ Ranger**: `75 Points`
+  * **★★★ Champion**: `95 Points`
+  * **★★★★ Legend**: `120 Points`
 * **Facilitator / Program-Wide Milestone Tracking**:
   * **Milestone #1**: 100 Arcade Games & 300 Skill Badges (Target: 400 Total)
   * **Milestone #2**: 200 Arcade Games & 500 Skill Badges (Target: 700 Total)

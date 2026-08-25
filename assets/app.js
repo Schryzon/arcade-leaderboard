@@ -527,7 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (points >= 120) {
       return {
         key: 'legend',
-        name: 'Arcade Legend',
+        name: 'Legend',
         stars: '★★★★',
         className: 'tier-legend',
         pointsReq: 120
@@ -536,7 +536,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (points >= 95) {
       return {
         key: 'champion',
-        name: 'Arcade Champion',
+        name: 'Champion',
         stars: '★★★',
         className: 'tier-champion',
         pointsReq: 95
@@ -545,7 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (points >= 75) {
       return {
         key: 'ranger',
-        name: 'Arcade Ranger',
+        name: 'Ranger',
         stars: '★★',
         className: 'tier-ranger',
         pointsReq: 75
@@ -554,7 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (points >= 50) {
       return {
         key: 'trooper',
-        name: 'Arcade Trooper',
+        name: 'Trooper',
         stars: '★',
         className: 'tier-trooper',
         pointsReq: 50
@@ -842,7 +842,7 @@ document.addEventListener('DOMContentLoaded', () => {
       modalTierBadge.style.opacity = '1';
     } else {
       const needed = 50 - p.points;
-      modalTierBadge.innerHTML = `<span class="tier-stars" style="opacity:0.6;">★</span> Butuh ${needed} poin lagi menuju Arcade Trooper (50 Pts)`;
+      modalTierBadge.innerHTML = `<span class="tier-stars" style="opacity:0.6;">★</span> Butuh ${needed} poin lagi menuju Trooper (50 Pts)`;
       modalTierBadge.className = 'tier-badge tier-trooper';
       modalTierBadge.style.display = 'inline-flex';
       modalTierBadge.style.opacity = '0.8';
