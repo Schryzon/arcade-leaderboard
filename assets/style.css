@@ -617,18 +617,130 @@ select.form-control option {
   to { box-shadow: 0 0 12px rgba(251, 197, 49, 0.5); }
 }
 
-.gear-badge {
+/* Prize Tier Badges */
+.tier-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  background: linear-gradient(135deg, rgba(57, 255, 20, 0.2) 0%, rgba(0, 242, 254, 0.2) 100%);
-  border: 1px solid rgba(57, 255, 20, 0.3);
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  color: var(--text-primary);
-  font-family: var(--font-stats);
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: var(--font-retro);
+  font-size: 0.95rem;
   letter-spacing: 0.5px;
+  white-space: nowrap;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.tier-stars {
+  color: var(--accent-gold);
+  letter-spacing: 1px;
+  font-size: 0.8rem;
+  text-shadow: 0 0 4px var(--accent-gold-glow);
+}
+
+.tier-trooper {
+  background: rgba(165, 177, 194, 0.12);
+  border: 1px solid rgba(165, 177, 194, 0.3);
+  color: #dfe6e9;
+}
+
+.tier-ranger {
+  background: rgba(57, 255, 20, 0.12);
+  border: 1px solid rgba(57, 255, 20, 0.35);
+  color: var(--accent-green);
+  box-shadow: 0 0 8px rgba(57, 255, 20, 0.15);
+}
+
+.tier-champion {
+  background: rgba(0, 242, 254, 0.12);
+  border: 1px solid rgba(0, 242, 254, 0.35);
+  color: var(--accent-cyan);
+  box-shadow: 0 0 8px rgba(0, 242, 254, 0.2);
+}
+
+.tier-legend {
+  background: linear-gradient(135deg, rgba(251, 197, 49, 0.2) 0%, rgba(255, 140, 0, 0.18) 100%);
+  border: 1px solid rgba(251, 197, 49, 0.5);
+  color: var(--accent-gold);
+  box-shadow: 0 0 12px rgba(251, 197, 49, 0.3);
+  animation: pulseGold 2s infinite alternate;
+}
+
+/* Prize Tiers Showcase Grid */
+.prize-tiers-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+}
+
+.prize-tier-card {
+  background: #141b2d;
+  border: 1.5px solid #24334a;
+  border-radius: 12px;
+  padding: 20px 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.prize-tier-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(251, 197, 49, 0.5);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4), 0 0 12px rgba(251, 197, 49, 0.2);
+}
+
+.prize-tier-stars {
+  color: var(--accent-gold);
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+  text-shadow: 0 0 6px var(--accent-gold-glow);
+}
+
+.prize-tier-title {
+  font-family: var(--font-retro);
+  color: var(--accent-gold);
+  font-size: 1.2rem;
+  letter-spacing: 1px;
+  text-shadow: 0 0 4px rgba(251, 197, 49, 0.3);
+}
+
+.prize-tier-divider {
+  color: var(--accent-gold);
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  opacity: 0.8;
+}
+
+.prize-tier-icon {
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.prize-tier-points {
+  font-family: var(--font-retro);
+  color: var(--accent-gold);
+  font-size: 1.15rem;
+  letter-spacing: 1px;
+}
+
+@media (max-width: 900px) {
+  .prize-tiers-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .prize-tiers-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .profile-link {
@@ -908,40 +1020,69 @@ select.form-control option {
 /* Progress Bars */
 .progress-container {
   background: rgba(0, 0, 0, 0.3);
-  height: 12px;
-  border-radius: 6px;
+  height: 14px;
+  border-radius: 9999px;
   position: relative;
   overflow: hidden;
   margin-bottom: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .progress-bar {
   height: 100%;
-  border-radius: 5px;
+  border-radius: 9999px;
   background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green));
   width: 0%;
   transition: width 0.5s ease-in-out;
 }
 
+/* Milestone-specific pill progression bars matching reference */
+.progress-container.milestone-pc-1 {
+  border: 1.5px solid #2979ff;
+  background: rgba(41, 121, 255, 0.06);
+  height: 18px;
+}
+
 .progress-bar.milestone-pb-1 {
-  background: linear-gradient(90deg, #1e3799, var(--accent-cyan));
-  box-shadow: 0 0 8px rgba(0, 242, 254, 0.3);
+  background: #2979ff;
+  box-shadow: 0 0 10px rgba(41, 121, 255, 0.4);
+  border-radius: 9999px;
+}
+
+.progress-container.milestone-pc-2 {
+  border: 1.5px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.06);
+  height: 18px;
 }
 
 .progress-bar.milestone-pb-2 {
-  background: linear-gradient(90deg, #f39c12, var(--accent-gold));
-  box-shadow: 0 0 8px rgba(251, 197, 49, 0.3);
+  background: #f59e0b;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+  border-radius: 9999px;
+}
+
+.progress-container.milestone-pc-3 {
+  border: 1.5px solid #2ecc71;
+  background: rgba(46, 204, 113, 0.06);
+  height: 18px;
 }
 
 .progress-bar.milestone-pb-3 {
-  background: linear-gradient(90deg, #27ae60, var(--accent-green));
-  box-shadow: 0 0 8px rgba(57, 255, 20, 0.3);
+  background: #2ecc71;
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
+  border-radius: 9999px;
+}
+
+.progress-container.milestone-pc-4 {
+  border: 1.5px solid #eb4d4b;
+  background: rgba(235, 77, 75, 0.06);
+  height: 18px;
 }
 
 .progress-bar.milestone-pb-4 {
-  background: linear-gradient(90deg, #8e44ad, var(--accent-pink));
-  box-shadow: 0 0 8px rgba(255, 0, 127, 0.3);
+  background: #eb4d4b;
+  box-shadow: 0 0 10px rgba(235, 77, 75, 0.4);
+  border-radius: 9999px;
 }
 
 .progress-labels {

@@ -52,10 +52,115 @@
           <div class="stat-value" id="stat-total-skills">0</div>
           <div class="stat-desc">Total lencana keahlian diselesaikan</div>
         </div>
-        <div class="stat-card pink">
-          <div class="stat-label">GEAR Bonus Earners</div>
-          <div class="stat-value" id="stat-bonus-count">0</div>
-          <div class="stat-desc">Tambahan +10 Bonus Poin</div>
+        <div class="stat-card gold">
+          <div class="stat-label">Prize Tier Qualifiers</div>
+          <div class="stat-value" id="stat-tier-count">0</div>
+          <div class="stat-desc">Peserta dengan ≥ 50 Poin</div>
+        </div>
+      </div>
+
+      <!-- PRIZE TIERS SHOWCASE -->
+      <div class="controls-card prize-tiers-card" style="margin-bottom: 30px;">
+        <h3 class="tracker-title" style="margin-top: 0; margin-bottom: 8px; color: var(--accent-gold); font-family: var(--font-retro); font-size: 1.1rem; letter-spacing: 1px;">Kategori Prize Tiers</h3>
+        <p class="tracker-desc" style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 20px;">
+          Kumpulkan poin dari Arcade Game dan Skill Badge untuk membuka tingkat hadiah (Prize Tier) eksklusif di bawah ini.
+        </p>
+        <div class="prize-tiers-grid">
+          <!-- Tier 1: Trooper -->
+          <div class="prize-tier-card tier-card-trooper">
+            <div class="prize-tier-stars">★</div>
+            <div class="prize-tier-title">Arcade Trooper</div>
+            <div class="prize-tier-divider">· · · ──── · · ·</div>
+            <div class="prize-tier-icon">
+              <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated;">
+                <rect x="13" y="4" width="6" height="6" fill="#eb4d4b"/>
+                <rect x="14" y="3" width="4" height="8" fill="#eb4d4b"/>
+                <rect x="14" y="4" width="2" height="2" fill="#ff7675"/>
+                <rect x="13" y="5" width="1" height="1" fill="#fff"/>
+                <rect x="15" y="10" width="2" height="6" fill="#b2bec3"/>
+                <rect x="14" y="15" width="4" height="2" fill="#636e72"/>
+                <rect x="9" y="17" width="14" height="9" rx="1" fill="#dfe6e9"/>
+                <rect x="10" y="18" width="12" height="7" fill="#b2bec3"/>
+                <rect x="11" y="20" width="2" height="2" fill="#00b894"/>
+                <rect x="19" y="20" width="2" height="2" fill="#d63031"/>
+                <rect x="9" y="25" width="14" height="1" fill="#636e72"/>
+              </svg>
+            </div>
+            <div class="prize-tier-points">50 Points</div>
+          </div>
+          <!-- Tier 2: Ranger -->
+          <div class="prize-tier-card tier-card-ranger">
+            <div class="prize-tier-stars">★★</div>
+            <div class="prize-tier-title">Arcade Ranger</div>
+            <div class="prize-tier-divider">· · · ──── · · ·</div>
+            <div class="prize-tier-icon">
+              <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated;">
+                <rect x="13" y="4" width="6" height="6" fill="#eb4d4b"/>
+                <rect x="14" y="3" width="4" height="8" fill="#eb4d4b"/>
+                <rect x="14" y="4" width="2" height="2" fill="#ff7675"/>
+                <rect x="13" y="5" width="1" height="1" fill="#fff"/>
+                <rect x="15" y="10" width="2" height="6" fill="#b2bec3"/>
+                <rect x="14" y="15" width="4" height="2" fill="#2d3436"/>
+                <rect x="8" y="16" width="16" height="11" rx="2" fill="#2979ff"/>
+                <rect x="9" y="17" width="14" height="9" fill="#4b6584"/>
+                <rect x="11" y="20" width="2" height="2" fill="#00b894"/>
+                <rect x="19" y="20" width="2" height="2" fill="#d63031"/>
+              </svg>
+            </div>
+            <div class="prize-tier-points">75 Points</div>
+          </div>
+          <!-- Tier 3: Champion -->
+          <div class="prize-tier-card tier-card-champion">
+            <div class="prize-tier-stars">★★★</div>
+            <div class="prize-tier-title">Arcade Champion</div>
+            <div class="prize-tier-divider">· · · ──── · · ·</div>
+            <div class="prize-tier-icon">
+              <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated;">
+                <rect x="11" y="2" width="10" height="10" rx="1" fill="#00f2fe" opacity="0.4"/>
+                <rect x="7" y="15" width="18" height="13" rx="2" fill="#00f2fe" opacity="0.4"/>
+                <rect x="13" y="4" width="6" height="6" fill="#eb4d4b"/>
+                <rect x="14" y="3" width="4" height="8" fill="#eb4d4b"/>
+                <rect x="14" y="4" width="2" height="2" fill="#ff7675"/>
+                <rect x="13" y="5" width="1" height="1" fill="#fff"/>
+                <rect x="15" y="10" width="2" height="6" fill="#dfe6e9"/>
+                <rect x="14" y="15" width="4" height="2" fill="#2d3436"/>
+                <rect x="8" y="16" width="16" height="11" rx="2" fill="#00d2d3"/>
+                <rect x="9" y="17" width="14" height="9" fill="#2d3436"/>
+                <rect x="11" y="20" width="2" height="2" fill="#00b894"/>
+                <rect x="19" y="20" width="2" height="2" fill="#d63031"/>
+              </svg>
+            </div>
+            <div class="prize-tier-points">95 Points</div>
+          </div>
+          <!-- Tier 4: Legend -->
+          <div class="prize-tier-card tier-card-legend">
+            <div class="prize-tier-stars">★★★★</div>
+            <div class="prize-tier-title">Arcade Legend</div>
+            <div class="prize-tier-divider">· · · ──── · · ·</div>
+            <div class="prize-tier-icon">
+              <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated;">
+                <rect x="5" y="5" width="2" height="2" fill="#fbc531"/>
+                <rect x="25" y="5" width="2" height="2" fill="#fbc531"/>
+                <rect x="4" y="16" width="2" height="2" fill="#fbc531"/>
+                <rect x="26" y="16" width="2" height="2" fill="#fbc531"/>
+                <rect x="7" y="11" width="1" height="1" fill="#ffeaa7"/>
+                <rect x="24" y="11" width="1" height="1" fill="#ffeaa7"/>
+                <rect x="11" y="2" width="10" height="10" rx="1" fill="#2979ff" opacity="0.6"/>
+                <rect x="7" y="15" width="18" height="13" rx="2" fill="#2979ff" opacity="0.6"/>
+                <rect x="13" y="4" width="6" height="6" fill="#eb4d4b"/>
+                <rect x="14" y="3" width="4" height="8" fill="#eb4d4b"/>
+                <rect x="14" y="4" width="2" height="2" fill="#ff7675"/>
+                <rect x="13" y="5" width="1" height="1" fill="#fff"/>
+                <rect x="15" y="10" width="2" height="6" fill="#dfe6e9"/>
+                <rect x="14" y="15" width="4" height="2" fill="#2d3436"/>
+                <rect x="8" y="16" width="16" height="11" rx="2" fill="#2979ff"/>
+                <rect x="9" y="17" width="14" height="9" fill="#1e272e"/>
+                <rect x="11" y="20" width="2" height="2" fill="#00b894"/>
+                <rect x="19" y="20" width="2" height="2" fill="#d63031"/>
+              </svg>
+            </div>
+            <div class="prize-tier-points">120 Points</div>
+          </div>
         </div>
       </div>
 
@@ -69,53 +174,53 @@
           <!-- Milestone #1 -->
           <div class="tracker-item">
             <div class="tracker-item-header" style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; font-weight: 600; color: var(--text-primary);">
-              <span>Milestone #1 - Mendorong penyelesaian 200 arcade game & 300 penyelesaian skill badge dalam program. ⌛</span>
+              <span>Milestone #1 - Mendorong penyelesaian 100 arcade game & 300 penyelesaian skill badge dalam program. ⌛</span>
             </div>
-            <div class="progress-container" style="margin-bottom: 5px; height: 14px;">
+            <div class="progress-container milestone-pc-1" style="margin-bottom: 5px; height: 16px;">
               <div class="progress-bar milestone-pb-1" id="milestone-progress-bar-1" style="width: 0%;"></div>
             </div>
             <div class="progress-labels" style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); font-family: var(--font-stats);">
               <span id="milestone-progress-percent-1">0% Completed</span>
-              <span id="milestone-progress-ratio-1">0/500</span>
+              <span id="milestone-progress-ratio-1">0/400</span>
             </div>
           </div>
           <!-- Milestone #2 -->
           <div class="tracker-item">
             <div class="tracker-item-header" style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; font-weight: 600; color: var(--text-primary);">
-              <span>Milestone #2 - Mendorong penyelesaian 300 arcade game & 500 penyelesaian skill badge dalam program. ⌛</span>
+              <span>Milestone #2 - Mendorong penyelesaian 200 arcade game & 500 penyelesaian skill badge dalam program. ⌛</span>
             </div>
-            <div class="progress-container" style="margin-bottom: 5px; height: 14px;">
+            <div class="progress-container milestone-pc-2" style="margin-bottom: 5px; height: 16px;">
               <div class="progress-bar milestone-pb-2" id="milestone-progress-bar-2" style="width: 0%;"></div>
             </div>
             <div class="progress-labels" style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); font-family: var(--font-stats);">
               <span id="milestone-progress-percent-2">0% Completed</span>
-              <span id="milestone-progress-ratio-2">0/800</span>
+              <span id="milestone-progress-ratio-2">0/700</span>
             </div>
           </div>
           <!-- Milestone #3 -->
           <div class="tracker-item">
             <div class="tracker-item-header" style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; font-weight: 600; color: var(--text-primary);">
-              <span>Milestone #3 - Mendorong penyelesaian 400 arcade game & 750 penyelesaian skill badge dalam program. ⌛</span>
+              <span>Milestone #3 - Mendorong penyelesaian 300 arcade game & 750 penyelesaian skill badge dalam program. ⌛</span>
             </div>
-            <div class="progress-container" style="margin-bottom: 5px; height: 14px;">
+            <div class="progress-container milestone-pc-3" style="margin-bottom: 5px; height: 16px;">
               <div class="progress-bar milestone-pb-3" id="milestone-progress-bar-3" style="width: 0%;"></div>
             </div>
             <div class="progress-labels" style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); font-family: var(--font-stats);">
               <span id="milestone-progress-percent-3">0% Completed</span>
-              <span id="milestone-progress-ratio-3">0/1150</span>
+              <span id="milestone-progress-ratio-3">0/1050</span>
             </div>
           </div>
           <!-- Milestone #4 -->
           <div class="tracker-item">
             <div class="tracker-item-header" style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; font-weight: 600; color: var(--text-primary);">
-              <span>Milestone #4 - Mendorong penyelesaian 500 arcade game & 1000 penyelesaian skill badge dalam program. ⌛</span>
+              <span>Milestone #4 - Mendorong penyelesaian 400 arcade game & 1000 penyelesaian skill badge dalam program. ⌛</span>
             </div>
-            <div class="progress-container" style="margin-bottom: 5px; height: 14px;">
+            <div class="progress-container milestone-pc-4" style="margin-bottom: 5px; height: 16px;">
               <div class="progress-bar milestone-pb-4" id="milestone-progress-bar-4" style="width: 0%;"></div>
             </div>
             <div class="progress-labels" style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); font-family: var(--font-stats);">
               <span id="milestone-progress-percent-4">0% Completed</span>
-              <span id="milestone-progress-ratio-4">0/1500</span>
+              <span id="milestone-progress-ratio-4">0/1400</span>
             </div>
           </div>
         </div>
@@ -140,11 +245,14 @@
             </select>
           </div>
           <div class="input-group">
-            <span class="input-label">Filter GEAR Bonus</span>
-            <select id="bonus-filter" class="form-control">
-              <option value="all">Semua Status Bonus</option>
-              <option value="yes">Mendapatkan Bonus (+10)</option>
-              <option value="no">Belum Mendapatkan Bonus</option>
+            <span class="input-label">Filter Prize Tier</span>
+            <select id="tier-filter" class="form-control">
+              <option value="all">Semua Prize Tier</option>
+              <option value="legend">Arcade Legend (120+ Pts)</option>
+              <option value="champion">Arcade Champion (95+ Pts)</option>
+              <option value="ranger">Arcade Ranger (75+ Pts)</option>
+              <option value="trooper">Arcade Trooper (50+ Pts)</option>
+              <option value="none">Belum Ada Tier (&lt; 50 Pts)</option>
             </select>
           </div>
           <div class="input-group">
@@ -196,7 +304,7 @@
               <th>Milestone</th>
               <th style="width: 150px; text-align: center;">Game</th>
               <th style="width: 150px; text-align: center;">Skill</th>
-              <th>GEAR</th>
+              <th>Prize Tier</th>
               <th style="width: 100px;">Profil</th>
             </tr>
           </thead>
@@ -231,9 +339,9 @@
         <!-- Milestone Progress Section -->
         <div class="modal-section">
           <h3 class="modal-section-title">Status Milestone & Target</h3>
-          <div style="margin-bottom: 15px;">
+          <div style="margin-bottom: 15px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
             <span class="milestone-badge" id="modal-milestone-badge">None</span>
-            <span class="gear-badge" id="modal-gear-badge" style="margin-left: 10px; display: none;">GEAR Ready (+10 Pts)</span>
+            <span class="tier-badge" id="modal-tier-badge" style="display: none;"></span>
           </div>
           
           <div class="progress-wrapper" style="margin-bottom: 12px;">

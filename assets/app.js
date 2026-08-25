@@ -76,6 +76,25 @@ document.addEventListener('DOMContentLoaded', () => {
               .replace(/'/g, '&#039;');
   }
 
+  // URL sanitization helper to prevent javascript: or attribute breakout XSS
+  function sanitizeUrl(url) {
+    if (!url) return '';
+    const trimmed = url.trim();
+    if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) {
+      return escapeHtml(trimmed);
+    }
+    return '';
+  }
+
+  // Safe localStorage helper to prevent unhandled QuotaExceededError exceptions
+  function safeSetStorage(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {
+      console.warn(`LocalStorage write failed for "${key}":`, e);
+    }
+  }
+
   // Filename timestamp helper to prevent duplicate/overwritten downloads
   function getFilenameTimestamp() {
     const now = new Date();
@@ -128,13 +147,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Stats Elements
   const statTotalParticipants = document.getElementById('stat-total-participants');
   const statTotalGames = document.getElementById('stat-total-games');
-  const statBonusCount = document.getElementById('stat-bonus-count');
+  const statTierCount = document.getElementById('stat-tier-count');
   const statTotalSkills = document.getElementById('stat-total-skills');
 
   // Filters Elements
   const searchInput = document.getElementById('search-input');
   const milestoneFilter = document.getElementById('milestone-filter');
-  const bonusFilter = document.getElementById('bonus-filter');
+  const tierFilter = document.getElementById('tier-filter');
   const sortFilter = document.getElementById('sort-filter');
 
   // Tables & Layout Elements
@@ -147,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalName = document.getElementById('modal-participant-name');
   const modalPoints = document.getElementById('modal-participant-points');
   const modalMilestoneBadge = document.getElementById('modal-milestone-badge');
-  const modalGearBadge = document.getElementById('modal-gear-badge');
+  const modalTierBadge = document.getElementById('modal-tier-badge');
   const modalArcadeProgressText = document.getElementById('modal-arcade-progress-text');
   const modalArcadeProgressBar = document.getElementById('modal-arcade-progress-bar');
   const modalSkillProgressText = document.getElementById('modal-skill-progress-text');
@@ -256,8 +275,8 @@ document.addEventListener('DOMContentLoaded', () => {
         minute: '2-digit',
         second: '2-digit'
       });
-      localStorage.setItem('arcade_leaderboard_csv_raw', text);
-      localStorage.setItem('arcade_leaderboard_csv_timestamp', timestamp);
+      safeSetStorage('arcade_leaderboard_csv_raw', text);
+      safeSetStorage('arcade_leaderboard_csv_timestamp', timestamp);
       processCSVData(text, timestamp);
     };
     reader.readAsText(file);
@@ -503,16 +522,69 @@ document.addEventListener('DOMContentLoaded', () => {
     return 0;
   }
 
+  // --- Prize Tier Helpers ---
+  function getPrizeTier(points) {
+    if (points >= 120) {
+      return {
+        key: 'legend',
+        name: 'Arcade Legend',
+        stars: '★★★★',
+        className: 'tier-legend',
+        pointsReq: 120
+      };
+    }
+    if (points >= 95) {
+      return {
+        key: 'champion',
+        name: 'Arcade Champion',
+        stars: '★★★',
+        className: 'tier-champion',
+        pointsReq: 95
+      };
+    }
+    if (points >= 75) {
+      return {
+        key: 'ranger',
+        name: 'Arcade Ranger',
+        stars: '★★',
+        className: 'tier-ranger',
+        pointsReq: 75
+      };
+    }
+    if (points >= 50) {
+      return {
+        key: 'trooper',
+        name: 'Arcade Trooper',
+        stars: '★',
+        className: 'tier-trooper',
+        pointsReq: 50
+      };
+    }
+    return null;
+  }
+
+  function getPrizeTierHtml(points) {
+    const tier = getPrizeTier(points);
+    if (!tier) {
+      return '<span style="color: var(--text-muted); font-size:0.75rem;">-</span>';
+    }
+    return `<span class="tier-badge ${tier.className}" title="${tier.name} (${tier.pointsReq}+ Pts)">
+      <span class="tier-stars">${tier.stars}</span> ${tier.name}
+    </span>`;
+  }
+
   // --- 4. Filtering, Sorting, and Rendering ---
   searchInput.addEventListener('input', updateLeaderboard);
   milestoneFilter.addEventListener('change', updateLeaderboard);
-  bonusFilter.addEventListener('change', updateLeaderboard);
+  if (tierFilter) {
+    tierFilter.addEventListener('change', updateLeaderboard);
+  }
   sortFilter.addEventListener('change', updateLeaderboard);
 
   function updateLeaderboard() {
     const searchVal = searchInput.value.toLowerCase().trim();
     const milestoneVal = milestoneFilter.value;
-    const bonusVal = bonusFilter.value;
+    const tierVal = tierFilter ? tierFilter.value : 'all';
     const sortVal = sortFilter.value;
 
     // Filter
@@ -525,12 +597,17 @@ document.addEventListener('DOMContentLoaded', () => {
         matchMilestone = key === milestoneVal;
       }
 
-      let matchBonus = true;
-      if (bonusVal !== 'all') {
-        matchBonus = (bonusVal === 'yes' && p.hasBonus) || (bonusVal === 'no' && !p.hasBonus);
+      let matchTier = true;
+      if (tierVal !== 'all') {
+        const tier = getPrizeTier(p.points);
+        if (tierVal === 'legend') matchTier = tier && tier.key === 'legend';
+        else if (tierVal === 'champion') matchTier = tier && tier.key === 'champion';
+        else if (tierVal === 'ranger') matchTier = tier && tier.key === 'ranger';
+        else if (tierVal === 'trooper') matchTier = tier && tier.key === 'trooper';
+        else if (tierVal === 'none') matchTier = !tier;
       }
 
-      return matchSearch && matchMilestone && matchBonus;
+      return matchSearch && matchMilestone && matchTier;
     });
 
     // Sort
@@ -572,16 +649,16 @@ document.addEventListener('DOMContentLoaded', () => {
     statTotalGames.textContent = totalGames;
     statTotalSkills.textContent = totalSkills;
 
-    const bonusCount = parsedParticipants.filter(p => p.hasBonus).length;
-    statBonusCount.textContent = bonusCount;
+    const tierCount = parsedParticipants.filter(p => p.points >= 50).length;
+    if (statTierCount) statTierCount.textContent = tierCount;
 
-    // Render program-wide milestone tracker
+    // Render program-wide milestone tracker (targets: 400, 700, 1050, 1400)
     renderMilestoneTracker(totalGames, totalSkills);
   }
 
   function renderMilestoneTracker(totalGames, totalSkills) {
     const totalActual = totalGames + totalSkills;
-    const targets = [500, 800, 1150, 1500];
+    const targets = [400, 700, 1050, 1400];
     
     for (let i = 1; i <= 4; i++) {
       const target = targets[i - 1];
@@ -620,18 +697,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Profile buttons
       let profileButtons = '';
-      if (p.skillsUrl) {
-        profileButtons += `<a href="${p.skillsUrl}" target="_blank" class="profile-link" title="Google Skills Profile">G</a>`;
+      const safeSkillsUrl = sanitizeUrl(p.skillsUrl);
+      const safeDevUrl = sanitizeUrl(p.devUrl);
+      if (safeSkillsUrl) {
+        profileButtons += `<a href="${safeSkillsUrl}" target="_blank" rel="noopener noreferrer" class="profile-link" title="Google Skills Profile">G</a>`;
       }
-      if (p.devUrl) {
-        profileButtons += `<a href="${p.devUrl}" target="_blank" class="profile-link dev" title="Google Developer Profile">D</a>`;
+      if (safeDevUrl) {
+        profileButtons += `<a href="${safeDevUrl}" target="_blank" rel="noopener noreferrer" class="profile-link dev" title="Google Developer Profile">D</a>`;
       }
 
-      // GEAR Bonus and Badge Status Logic
-      let gearBonusHtml = '<span style="color: var(--text-muted); font-size:0.75rem;">-</span>';
-      if (p.hasBonus) {
-        gearBonusHtml = '<span class="gear-badge">⚙️ Bonus (+10)</span>';
-      }
+      // Prize Tier HTML
+      const prizeTierHtml = getPrizeTierHtml(p.points);
 
       // --- Desktop Row HTML ---
       const tr = document.createElement('tr');
@@ -651,7 +727,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td><span class="milestone-badge ${milestoneClass}">${escapeHtml(p.milestone)}</span></td>
         <td style="text-align: center;"><span class="badge-count arcade">🎮 ${p.arcadeCount}</span></td>
         <td style="text-align: center;"><span class="badge-count skill">🏆 ${p.skillsCount}</span></td>
-        <td>${gearBonusHtml}</td>
+        <td>${prizeTierHtml}</td>
         <td>
           <div class="profile-links-container">
             ${profileButtons || '<span style="color: var(--text-muted); font-size:0.75rem;">-</span>'}
@@ -685,8 +761,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="milestone-badge ${milestoneClass}" style="transform: scale(0.9); transform-origin: left; width: fit-content;">${escapeHtml(p.milestone)}</span>
           </div>
           <div class="mobile-stat">
-            <span class="mobile-label">Bonus GEAR</span>
-            <span>${gearBonusHtml}</span>
+            <span class="mobile-label">Prize Tier</span>
+            <span>${prizeTierHtml}</span>
           </div>
           <div class="mobile-stat" style="margin-top: 5px;">
             <span class="mobile-label">Game Arcade</span>
@@ -757,14 +833,19 @@ document.addEventListener('DOMContentLoaded', () => {
     modalMilestoneBadge.textContent = p.milestone;
     modalMilestoneBadge.className = `milestone-badge ${getMilestoneClass(p.milestone)}`;
 
-    if (p.hasBonus) {
-      modalGearBadge.textContent = '⚙️ GEAR Ready (+10 Poin)';
-      modalGearBadge.style.display = 'inline-flex';
-      modalGearBadge.style.background = 'linear-gradient(135deg, rgba(57, 255, 20, 0.2) 0%, rgba(0, 242, 254, 0.2) 100%)';
-      modalGearBadge.style.borderColor = 'rgba(57, 255, 20, 0.3)';
-      modalGearBadge.style.color = 'var(--text-primary)';
+    // Prize Tier in modal
+    const tier = getPrizeTier(p.points);
+    if (tier) {
+      modalTierBadge.innerHTML = `<span class="tier-stars">${tier.stars}</span> ${tier.name} (${tier.pointsReq}+ Pts)`;
+      modalTierBadge.className = `tier-badge ${tier.className}`;
+      modalTierBadge.style.display = 'inline-flex';
+      modalTierBadge.style.opacity = '1';
     } else {
-      modalGearBadge.style.display = 'none';
+      const needed = 50 - p.points;
+      modalTierBadge.innerHTML = `<span class="tier-stars" style="opacity:0.6;">★</span> Butuh ${needed} poin lagi menuju Arcade Trooper (50 Pts)`;
+      modalTierBadge.className = 'tier-badge tier-trooper';
+      modalTierBadge.style.display = 'inline-flex';
+      modalTierBadge.style.opacity = '0.8';
     }
 
     let nextMilestone = "";
@@ -826,19 +907,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Profile links in Modal
     modalLinksContainer.innerHTML = '';
-    if (p.skillsUrl) {
+    const safeModalSkillsUrl = sanitizeUrl(p.skillsUrl);
+    const safeModalDevUrl = sanitizeUrl(p.devUrl);
+    if (safeModalSkillsUrl) {
       modalLinksContainer.innerHTML += `
-        <a href="${p.skillsUrl}" target="_blank" class="profile-link" style="width: auto; height: auto; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; font-family: var(--font-stats);" title="Profil Skills">
+        <a href="${safeModalSkillsUrl}" target="_blank" rel="noopener noreferrer" class="profile-link" style="width: auto; height: auto; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; font-family: var(--font-stats);" title="Profil Skills">
           Google Skills Profile ↗
         </a>`;
     }
-    if (p.devUrl) {
+    if (safeModalDevUrl) {
       modalLinksContainer.innerHTML += `
-        <a href="${p.devUrl}" target="_blank" class="profile-link dev" style="width: auto; height: auto; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; font-family: var(--font-stats);" title="Profil Developer">
+        <a href="${safeModalDevUrl}" target="_blank" rel="noopener noreferrer" class="profile-link dev" style="width: auto; height: auto; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; font-family: var(--font-stats);" title="Profil Developer">
           Google Developer Profile ↗
         </a>`;
     }
-    if (!p.skillsUrl && !p.devUrl) {
+    if (!safeModalSkillsUrl && !safeModalDevUrl) {
       modalLinksContainer.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">Tidak ada tautan profil publik.</span>';
     }
 
@@ -997,7 +1080,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <th>Milestone</th>
           <th style="width: 110px; text-align: center;">Game</th>
           <th style="width: 110px; text-align: center;">Skill</th>
-          <th>GEAR</th>
+          <th>Prize Tier</th>
         </tr>
       </thead>
       <tbody>
@@ -1010,11 +1093,7 @@ document.addEventListener('DOMContentLoaded', () => {
           else if (rank === 3) rankClass = 'rank-3';
 
           const milestoneClass = getMilestoneClass(p.milestone);
-          
-          let gearBonusHtml = '<span style="color: var(--text-muted); font-size:0.75rem;">-</span>';
-          if (p.hasBonus) {
-            gearBonusHtml = '<span class="gear-badge" style="transform: scale(0.8); transform-origin: left;">⚙️ Bonus (+10)</span>';
-          }
+          const prizeTierHtml = getPrizeTierHtml(p.points);
           
           return `
             <tr>
@@ -1024,7 +1103,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <td><span class="milestone-badge ${milestoneClass}" style="transform: scale(0.8); transform-origin: left;">${escapeHtml(p.milestone)}</span></td>
               <td style="text-align: center;"><span class="badge-count arcade" style="font-size: 0.8rem;">🎮 ${p.arcadeCount}</span></td>
               <td style="text-align: center;"><span class="badge-count skill" style="font-size: 0.8rem;">🏆 ${p.skillsCount}</span></td>
-              <td>${gearBonusHtml}</td>
+              <td>${prizeTierHtml}</td>
             </tr>
           `;
         }).join('')}
@@ -1098,9 +1177,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="stat-label">Total Skill Badge</div>
         <div class="stat-value" style="font-size: 1.5rem;">${parsedParticipants.reduce((sum, p) => sum + p.skillsCount, 0)}</div>
       </div>
-      <div class="stat-card pink">
-        <div class="stat-label">GEAR Bonus</div>
-        <div class="stat-value" style="font-size: 1.5rem;">${parsedParticipants.filter(p => p.hasBonus).length}</div>
+      <div class="stat-card gold">
+        <div class="stat-label">Prize Tier Achievers</div>
+        <div class="stat-value" style="font-size: 1.5rem;">${parsedParticipants.filter(p => p.points >= 50).length}</div>
       </div>
     `;
     container.appendChild(summary);
@@ -1123,7 +1202,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <th style="border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Milestone</th>
           <th style="width: 120px; text-align: center; border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Game</th>
           <th style="width: 120px; text-align: center; border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Skill</th>
-          <th style="border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">GEAR</th>
+          <th style="border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Prize Tier</th>
         </tr>
       </thead>
       <tbody>
@@ -1135,11 +1214,7 @@ document.addEventListener('DOMContentLoaded', () => {
           else if (rank === 3) rankClass = 'rank-3';
 
           const milestoneClass = getMilestoneClass(p.milestone);
-          
-          let gearBonusHtml = '<span style="color: var(--text-muted); font-size: 0.75rem;">-</span>';
-          if (p.hasBonus) {
-            gearBonusHtml = '<span class="gear-badge">⚙️ Bonus (+10)</span>';
-          }
+          const prizeTierHtml = getPrizeTierHtml(p.points);
           
           return `
             <tr>
@@ -1149,7 +1224,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <td style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 12px 15px;"><span class="milestone-badge ${milestoneClass}" style="transform: scale(0.85); transform-origin: left;">${escapeHtml(p.milestone)}</span></td>
               <td style="text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 12px 15px;"><span class="badge-count arcade">🎮 ${p.arcadeCount}</span></td>
               <td style="text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 12px 15px;"><span class="badge-count skill">🏆 ${p.skillsCount}</span></td>
-              <td style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 12px 15px;">${gearBonusHtml}</td>
+              <td style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 12px 15px;">${prizeTierHtml}</td>
             </tr>
           `;
         }).join('')}
@@ -1466,7 +1541,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }));
     }
 
-    localStorage.setItem('arcade_profile_cache', JSON.stringify(profileCache));
+    safeSetStorage('arcade_profile_cache', JSON.stringify(profileCache));
     updateLeaderboard();
     
     if (sync_fail_count === total_participants) {
@@ -1636,7 +1711,7 @@ document.addEventListener('DOMContentLoaded', () => {
           else if (currentType === 'skill') nextType = 'ignored';
 
           customClassifications[b.title] = nextType;
-          localStorage.setItem('arcade_custom_badge_classifications', JSON.stringify(customClassifications));
+          safeSetStorage('arcade_custom_badge_classifications', JSON.stringify(customClassifications));
           
           renderLiveVerifyList(rawBadges);
         });
@@ -1673,7 +1748,7 @@ document.addEventListener('DOMContentLoaded', () => {
       skillsList: tempLiveStats.skillsList,
       lastSynced: activeModalParticipant.lastSynced
     };
-    localStorage.setItem('arcade_profile_cache', JSON.stringify(profileCache));
+    safeSetStorage('arcade_profile_cache', JSON.stringify(profileCache));
 
     updateLeaderboard();
 
@@ -1698,7 +1773,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function activeParticipantIndex() {
-    return filteredParticipants.findIndex(p => p.skillsUrl === activeModalParticipant.skillsUrl) + 1;
+    if (!activeModalParticipant) return 1;
+    const idx = filteredParticipants.indexOf(activeModalParticipant);
+    if (idx !== -1) return idx + 1;
+    if (activeModalParticipant.skillsUrl) {
+      const uIdx = filteredParticipants.findIndex(p => p.skillsUrl === activeModalParticipant.skillsUrl);
+      if (uIdx !== -1) return uIdx + 1;
+    }
+    const nIdx = filteredParticipants.findIndex(p => p.name === activeModalParticipant.name);
+    return nIdx !== -1 ? nIdx + 1 : 1;
   }
 
   // Wires Event Listeners

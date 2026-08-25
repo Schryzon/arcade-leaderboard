@@ -26,20 +26,29 @@ The application is deployed and accessible at:
 * **Point System Calculation**:
   * **Arcade Game Badge** = `1 Point`
   * **Skill Badge** = `0.5 Points` (Every 2 badges = `1 Point`, rounded down using `Math.floor`)
-  * **Milestone Tier Bonus** = Dynamic bonus points based on the highest achieved milestone (non-cumulative):
+  * **Participant Milestone Bonus** = Dynamic bonus points based on the highest achieved milestone (non-cumulative):
     * **Milestone 1**: `+7 Points`
     * **Milestone 2**: `+18 Points`
     * **Milestone 3**: `+29 Points`
     * **Ultimate Milestone**: `+40 Points`
-  * **GEAR Bonus Milestone** = `10 Points` (if marked "Yes" in the `Bonus Milestone yang diraih` CSV column)
   * **Total Points** = `ArcadeGames + floor(SkillBadges / 2) + MilestoneBonus + (BonusMilestone ? 10 : 0)`
-* **Milestone Progress Tracking**:
+* **Participant Milestone Tracking**:
   * **Milestone 1**: 6 Arcade Games & 14 Skill Badges
   * **Milestone 2**: 8 Arcade Games & 28 Skill Badges
   * **Milestone 3**: 10 Arcade Games & 42 Skill Badges
   * **Ultimate Milestone**: 12 Arcade Games & 56 Skill Badges
-  * Provides dynamic "Needed Badges" feedback and individual progress gauges.
-* **GEAR Status Indication**: Displays whether a participant's GEAR badge is verified (even before the milestone bonus points are active), letting them know their badge submission is correct.
+  * Evaluated per participant in table, mobile cards, and detail modal with dynamic "Needed Badges" feedback.
+* **Prize Tiers System**:
+  * **★ Arcade Trooper**: `50 Points`
+  * **★★ Arcade Ranger**: `75 Points`
+  * **★★★ Arcade Champion**: `95 Points`
+  * **★★★★ Arcade Legend**: `120 Points`
+* **Facilitator / Program-Wide Milestone Tracking**:
+  * **Milestone #1**: 100 Arcade Games & 300 Skill Badges (Target: 400 Total)
+  * **Milestone #2**: 200 Arcade Games & 500 Skill Badges (Target: 700 Total)
+  * **Milestone #3**: 300 Arcade Games & 750 Skill Badges (Target: 1050 Total)
+  * **Milestone #4**: 400 Arcade Games & 1000 Skill Badges (Target: 1400 Total)
+  * Tracks group-wide cumulative progress gauges for facilitators to reach program goals.
 * **Responsive Visuals**: Adaptable design optimized for both desktop monitors (detailed table views) and mobile screens (compact click-to-expand scorecard cards).
 * **Advanced Shareable Exports**:
   * **Export ZIP (16:9)**: Bundles landscape slide cards (containing up to 10 participants per page) into a single ZIP of images.
