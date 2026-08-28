@@ -7,6 +7,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // Generate background stars
   generateStarfield();
 
+  // Mobile Debug Console (Activate by adding ?debug to URL)
+  if (window.location.search.includes('debug') || window.location.hash.includes('debug')) {
+    const erudaScript = document.createElement('script');
+    erudaScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/eruda/3.0.1/eruda.min.js';
+    erudaScript.onload = () => {
+      if (window.eruda) window.eruda.init();
+    };
+    document.head.appendChild(erudaScript);
+  }
+
   // CORS Proxy Configuration (Cloudflare Worker)
   const PROXY_BASE_URL = 'https://arcade-cors-proxy.schryzon.workers.dev';
 
@@ -1426,7 +1436,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const targetUrl = forceEnglishLocale(profileUrl);
     const proxyUrl = get_proxy_url(targetUrl);
     const res = await fetch(proxyUrl);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status}${errText ? ': ' + errText : ''}`);
+    }
     const htmlText = await res.text();
 
     const parser = new DOMParser();
@@ -1503,6 +1516,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let sync_completed = 0;
     let sync_success_count = 0;
     let sync_fail_count = 0;
+    let last_sync_error = '';
     const total_participants = participantsWithUrls.length;
     const sync_concurrency = 5;
 
@@ -1536,6 +1550,7 @@ document.addEventListener('DOMContentLoaded', () => {
             sync_fail_count++;
           }
         } catch (err) {
+          last_sync_error = err.message || String(err);
           console.error(`Gagal sinkronisasi profil ${p.name}:`, err);
           sync_fail_count++;
         } finally {
@@ -1552,7 +1567,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateLeaderboard();
     
     if (sync_fail_count === total_participants) {
-      showToast('Sinkronisasi gagal untuk semua profil! Periksa CSP / koneksi.', false, 3500, 'error');
+      showToast(`Sinkronisasi gagal (${last_sync_error || 'Koneksi/CSP error'})`, false, 5000, 'error');
     } else if (sync_fail_count > 0) {
       showToast(`Sinkronisasi selesai! ${sync_success_count} berhasil, ${sync_fail_count} gagal.`, false, 3500, 'warning');
     } else {
@@ -1585,7 +1600,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const targetUrl = forceEnglishLocale(activeModalParticipant.skillsUrl);
       const proxyUrl = get_proxy_url(targetUrl);
       const res = await fetch(proxyUrl);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`HTTP ${res.status}${errText ? ': ' + errText : ''}`);
+      }
       const htmlText = await res.text();
 
       const parser = new DOMParser();
