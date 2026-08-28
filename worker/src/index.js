@@ -18,34 +18,59 @@ const ALLOWED_TARGET_HOSTS = new Set([
   'www.google.qwiklabs.com'
 ]);
 
+function extract_origin(request) {
+  const origin = request.headers.get('Origin');
+  if (origin) return origin;
+
+  const referer = request.headers.get('Referer');
+  if (referer) {
+    try {
+      const url = new URL(referer);
+      return url.origin;
+    } catch {}
+  }
+  return null;
+}
+
+function is_private_ip(hostname) {
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.local')) return true;
+  if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
+  if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
+  if (/^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
+  return false;
+}
+
 function is_origin_allowed(origin) {
-  if (!origin) return true; // Non-browser / direct requests
+  if (!origin) return true;
   if (ALLOWED_ORIGINS.has(origin)) return true;
   try {
     const url = new URL(origin);
-    if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return true;
+    if (is_private_ip(url.hostname)) return true;
   } catch {}
   return false;
 }
 
 function get_cors_headers(origin) {
-  const allow_origin = is_origin_allowed(origin) && origin ? origin : 'https://schryzon.github.io';
+  let allow_origin = '*';
+  if (origin) {
+    allow_origin = is_origin_allowed(origin) ? origin : 'https://schryzon.github.io';
+  }
   return {
     'Access-Control-Allow-Origin': allow_origin,
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Accept, Origin, User-Agent',
     'Access-Control-Max-Age': '86400'
   };
 }
 
 export default {
   async fetch(request) {
-    const origin = request.headers.get('Origin');
+    const origin = extract_origin(request);
     const cors_headers = get_cors_headers(origin);
 
     // Handle preflight OPTIONS request
     if (request.method === 'OPTIONS') {
-      if (!is_origin_allowed(origin)) {
+      if (origin && !is_origin_allowed(origin)) {
         return new Response('Forbidden: Origin not allowed', {
           status: 403,
           headers: cors_headers
@@ -66,7 +91,7 @@ export default {
     }
 
     // Validate Origin for browser requests
-    if (!is_origin_allowed(origin)) {
+    if (origin && !is_origin_allowed(origin)) {
       return new Response('Forbidden: Origin not allowed', {
         status: 403,
         headers: cors_headers
