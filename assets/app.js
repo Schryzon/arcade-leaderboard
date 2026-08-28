@@ -7,6 +7,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Generate background stars
   generateStarfield();
 
+  // CORS Proxy Configuration (Cloudflare Worker)
+  const PROXY_BASE_URL = 'https://arcade-cors-proxy.schryzon.workers.dev';
+
+  function get_proxy_url(target_url) {
+    return `${PROXY_BASE_URL}/?url=${encodeURIComponent(target_url)}`;
+  }
+
   // App State
   let rawData = [];
   let parsedParticipants = [];
@@ -1417,7 +1424,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function fetchAndParseProfile(profileUrl, hasBonus) {
     if (!profileUrl) return null;
     const targetUrl = forceEnglishLocale(profileUrl);
-    const proxyUrl = 'https://corsproxy.io/?url=' + encodeURIComponent(targetUrl);
+    const proxyUrl = get_proxy_url(targetUrl);
     const res = await fetch(proxyUrl);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const htmlText = await res.text();
@@ -1576,7 +1583,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const targetUrl = forceEnglishLocale(activeModalParticipant.skillsUrl);
-      const proxyUrl = 'https://corsproxy.io/?url=' + encodeURIComponent(targetUrl);
+      const proxyUrl = get_proxy_url(targetUrl);
       const res = await fetch(proxyUrl);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const htmlText = await res.text();

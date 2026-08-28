@@ -16,6 +16,9 @@ data/
 .DS_Store
 Thumbs.db
 node_modules/
+.wrangler/
+worker/node_modules/
+worker/.wrangler/
 .gemini/
 brain/
 task.md
