@@ -9,9 +9,27 @@ const ALLOWED_ORIGINS = new Set([
   'http://127.0.0.1:5500'
 ]);
 
+const ALLOWED_TARGET_HOSTS = new Set([
+  'skills.google',
+  'www.skills.google',
+  'cloudskillsboost.google',
+  'www.cloudskillsboost.google',
+  'google.qwiklabs.com',
+  'www.google.qwiklabs.com'
+]);
+
+function is_origin_allowed(origin) {
+  if (!origin) return true; // Non-browser / direct requests
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+  try {
+    const url = new URL(origin);
+    if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return true;
+  } catch {}
+  return false;
+}
+
 function get_cors_headers(origin) {
-  const is_allowed = ALLOWED_ORIGINS.has(origin);
-  const allow_origin = is_allowed ? origin : 'https://schryzon.github.io';
+  const allow_origin = is_origin_allowed(origin) && origin ? origin : 'https://schryzon.github.io';
   return {
     'Access-Control-Allow-Origin': allow_origin,
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
@@ -23,26 +41,36 @@ function get_cors_headers(origin) {
 export default {
   async fetch(request) {
     const origin = request.headers.get('Origin');
+    const cors_headers = get_cors_headers(origin);
 
     // Handle preflight OPTIONS request
     if (request.method === 'OPTIONS') {
-      if (origin && !ALLOWED_ORIGINS.has(origin)) {
-        return new Response('Forbidden: Origin not allowed', { status: 403 });
+      if (!is_origin_allowed(origin)) {
+        return new Response('Forbidden: Origin not allowed', {
+          status: 403,
+          headers: cors_headers
+        });
       }
       return new Response(null, {
         status: 204,
-        headers: get_cors_headers(origin)
+        headers: cors_headers
       });
     }
 
     // Only allow GET requests
     if (request.method !== 'GET') {
-      return new Response('Method Not Allowed', { status: 405 });
+      return new Response('Method Not Allowed', {
+        status: 405,
+        headers: cors_headers
+      });
     }
 
     // Validate Origin for browser requests
-    if (origin && !ALLOWED_ORIGINS.has(origin)) {
-      return new Response('Forbidden: Origin not allowed', { status: 403 });
+    if (!is_origin_allowed(origin)) {
+      return new Response('Forbidden: Origin not allowed', {
+        status: 403,
+        headers: cors_headers
+      });
     }
 
     // Extract target URL
@@ -50,7 +78,10 @@ export default {
     const target_url = request_url.searchParams.get('url');
 
     if (!target_url) {
-      return new Response('Bad Request: Missing "url" query parameter', { status: 400 });
+      return new Response('Bad Request: Missing "url" query parameter', {
+        status: 400,
+        headers: cors_headers
+      });
     }
 
     // Validate target URL host to prevent open proxy abuse
@@ -58,16 +89,20 @@ export default {
     try {
       parsed_target = new URL(target_url);
     } catch {
-      return new Response('Bad Request: Invalid URL format', { status: 400 });
+      return new Response('Bad Request: Invalid URL format', {
+        status: 400,
+        headers: cors_headers
+      });
     }
 
-    const is_valid_host =
-      parsed_target.protocol === 'https:' &&
-      (parsed_target.hostname === 'www.cloudskillsboost.google' ||
-       parsed_target.hostname === 'cloudskillsboost.google');
+    const is_valid_protocol = parsed_target.protocol === 'https:' || parsed_target.protocol === 'http:';
+    const is_valid_host = is_valid_protocol && ALLOWED_TARGET_HOSTS.has(parsed_target.hostname.toLowerCase());
 
     if (!is_valid_host) {
-      return new Response('Bad Request: Target URL must belong to cloudskillsboost.google', { status: 400 });
+      return new Response('Bad Request: Target URL must belong to Google Skills Boost domains (skills.google, cloudskillsboost.google)', {
+        status: 400,
+        headers: cors_headers
+      });
     }
 
     // Fetch target resource
@@ -81,7 +116,6 @@ export default {
       });
 
       const body = await response.text();
-      const cors_headers = get_cors_headers(origin);
 
       return new Response(body, {
         status: response.status,
@@ -93,7 +127,7 @@ export default {
     } catch (err) {
       return new Response(`Bad Gateway: Failed to fetch upstream profile (${err.message})`, {
         status: 502,
-        headers: get_cors_headers(origin)
+        headers: cors_headers
       });
     }
   }
