@@ -86,11 +86,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function escapeHtml(str) {
     if (str === null || str === undefined) return '';
     return str.toString()
-              .replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/"/g, '&quot;')
-              .replace(/'/g, '&#039;');
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
   // URL sanitization helper to prevent javascript: or attribute breakout XSS
@@ -124,15 +124,20 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${year}${month}${day}_${hour}${minute}${second}`;
   }
 
-  // Validate if a badge's earned date string falls within the valid 2026 program window
-  // Valid range: 13 July 2026 (10 AM) to 14 September 2026 (23:59) GMT+7
-  function isBadgeDateValid(earnedText) {
-    if (!earnedText) return false;
-    
+  // Program Windows:
+  // 1. Official Facilitator Event Period: 13 July 2026 (10 AM) to 29 September 2026 (23:59:59) GMT+7
+  // 2. Extended Global Arcade Season: 30 September 2026 (00:00:00) to 31 December 2026 (23:59:59) GMT+7
+  const PROGRAM_START_DATE = Date.parse('2026-07-13T10:00:00+07:00');
+  const EVENT_CUTOFF_DATE = Date.parse('2026-09-29T23:59:59+07:00');
+  const EXTENDED_SEASON_END_DATE = Date.parse('2026-12-31T23:59:59+07:00');
+
+  function getBadgeDateCategory(earned_text) {
+    if (!earned_text) return 'invalid';
+
     // Clean up spaces and word "Earned"
-    let clean = earnedText.replace(/Earned/gi, '').replace(/\s+/g, ' ').trim();
-    if (!clean) return false;
-    
+    let clean = earned_text.replace(/Earned/gi, '').replace(/\s+/g, ' ').trim();
+    if (!clean) return 'invalid';
+
     // Normalize EDT/EST timezone abbreviation to numeric offsets for reliable cross-browser parsing
     let normalized = clean;
     if (normalized.endsWith('EDT')) {
@@ -140,17 +145,25 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (normalized.endsWith('EST')) {
       normalized = normalized.slice(0, -3).trim() + ' GMT-0500';
     }
-    
+
     const timestamp = Date.parse(normalized);
     if (isNaN(timestamp)) {
-      console.warn('Failed to parse badge date:', earnedText, 'Normalized as:', normalized);
-      return false;
+      console.warn('Failed to parse badge date:', earned_text, 'Normalized as:', normalized);
+      return 'invalid';
     }
-    
-    const rangeStart = Date.parse('2026-07-13T10:00:00+07:00'); // 1783911600000
-    const rangeEnd = Date.parse('2026-09-14T23:59:59+07:00');   // 1789405199000
-    
-    return timestamp >= rangeStart && timestamp <= rangeEnd;
+
+    if (timestamp < PROGRAM_START_DATE || timestamp > EXTENDED_SEASON_END_DATE) {
+      return 'invalid';
+    }
+    if (timestamp <= EVENT_CUTOFF_DATE) {
+      return 'event';
+    }
+    return 'extended';
+  }
+
+  function isBadgeDateValid(earned_text) {
+    const category = getBadgeDateCategory(earned_text);
+    return category === 'event' || category === 'extended';
   }
 
   // Cache DOM Elements
@@ -160,6 +173,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const uploadContainer = document.getElementById('upload-container');
   const leaderboardSection = document.getElementById('leaderboard-section');
   const resetDataBtn = document.getElementById('reset-data-btn');
+
+  // Mode Elements
+  const modeTabFacilitator = document.getElementById('mode-tab-facilitator');
+  const modeTabPlayer = document.getElementById('mode-tab-player');
+  const playerLookupContainer = document.getElementById('player-lookup-container');
+  const playerUrlInput = document.getElementById('player-url-input');
+  const playerHasBonusCheckbox = document.getElementById('player-has-bonus');
+  const checkPlayerBtn = document.getElementById('check-player-btn');
+  const playerLookupStatus = document.getElementById('player-lookup-status');
+  const individualTrackerSection = document.getElementById('individual-tracker-section');
 
   // Stats Elements
   const statTotalParticipants = document.getElementById('stat-total-participants');
@@ -219,6 +242,115 @@ document.addEventListener('DOMContentLoaded', () => {
   const savedTimestamp = localStorage.getItem('arcade_leaderboard_csv_timestamp') || '';
   if (savedData) {
     processCSVData(savedData, savedTimestamp);
+  }
+
+  // --- Mode Switching Logic ---
+  function switchMode(mode) {
+    if (mode === 'player') {
+      if (modeTabPlayer) modeTabPlayer.classList.add('active');
+      if (modeTabFacilitator) modeTabFacilitator.classList.remove('active');
+      if (uploadContainer) uploadContainer.style.display = 'none';
+      if (leaderboardSection) leaderboardSection.style.display = 'none';
+
+      if (individualTrackerSection && individualTrackerSection.innerHTML.trim() !== '') {
+        individualTrackerSection.style.display = 'flex';
+        if (playerLookupContainer) playerLookupContainer.style.display = 'none';
+      } else {
+        if (playerLookupContainer) playerLookupContainer.style.display = 'block';
+        if (individualTrackerSection) individualTrackerSection.style.display = 'none';
+      }
+      safeSetStorage('arcade_app_mode', 'player');
+    } else {
+      if (modeTabFacilitator) modeTabFacilitator.classList.add('active');
+      if (modeTabPlayer) modeTabPlayer.classList.remove('active');
+      if (playerLookupContainer) playerLookupContainer.style.display = 'none';
+      if (individualTrackerSection) individualTrackerSection.style.display = 'none';
+
+      if (parsedParticipants.length > 0) {
+        if (leaderboardSection) leaderboardSection.style.display = 'block';
+        if (uploadContainer) uploadContainer.style.display = 'none';
+      } else {
+        if (uploadContainer) uploadContainer.style.display = 'block';
+        if (leaderboardSection) leaderboardSection.style.display = 'none';
+      }
+      safeSetStorage('arcade_app_mode', 'facilitator');
+    }
+  }
+
+  if (modeTabFacilitator) {
+    modeTabFacilitator.addEventListener('click', () => switchMode('facilitator'));
+  }
+  if (modeTabPlayer) {
+    modeTabPlayer.addEventListener('click', () => switchMode('player'));
+  }
+
+  // Restore saved player profile input
+  const savedPlayerUrl = localStorage.getItem('arcade_saved_player_url');
+  if (savedPlayerUrl && playerUrlInput) {
+    playerUrlInput.value = savedPlayerUrl;
+  }
+  const savedPlayerBonus = localStorage.getItem('arcade_saved_player_bonus') === 'true';
+  if (playerHasBonusCheckbox) {
+    playerHasBonusCheckbox.checked = savedPlayerBonus;
+  }
+
+  const savedMode = localStorage.getItem('arcade_app_mode') || (savedData ? 'facilitator' : 'player');
+  switchMode(savedMode);
+
+  // Individual lookup event listeners
+  if (checkPlayerBtn) {
+    checkPlayerBtn.addEventListener('click', handleIndividualLookup);
+  }
+  if (playerUrlInput) {
+    playerUrlInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleIndividualLookup();
+      }
+    });
+  }
+
+  async function handleIndividualLookup() {
+    const rawUrl = playerUrlInput ? playerUrlInput.value.trim() : '';
+    const hasBonus = playerHasBonusCheckbox ? playerHasBonusCheckbox.checked : false;
+
+    if (!rawUrl || !rawUrl.includes('skills.google/public_profiles/')) {
+      showLookupStatus('Tolong masukkan URL profil publik Google Skills yang valid (contoh: https://www.skills.google/public_profiles/...)', 'error');
+      return;
+    }
+
+    showLookupStatus('Menghubungkan ke profil Google Skills dan memverifikasi lencana...', 'loading');
+    checkPlayerBtn.disabled = true;
+
+    try {
+      const stats = await fetchAndParseProfile(rawUrl, hasBonus);
+      if (!stats) {
+        throw new Error('Gagal mengurai profil. Pastikan URL benar dan profil disetel ke publik.');
+      }
+
+      safeSetStorage('arcade_saved_player_url', rawUrl);
+      safeSetStorage('arcade_saved_player_bonus', String(hasBonus));
+
+      showLookupStatus('', 'clear');
+      checkPlayerBtn.disabled = false;
+      if (playerLookupContainer) playerLookupContainer.style.display = 'none';
+      renderIndividualScorecard(stats, rawUrl);
+    } catch (err) {
+      checkPlayerBtn.disabled = false;
+      showLookupStatus(`Gagal memproses profil: ${err.message || 'Koneksi CORS terhambat atau profil tidak ditemukan.'}`, 'error');
+    }
+  }
+
+  function showLookupStatus(msg, type) {
+    if (!playerLookupStatus) return;
+    if (type === 'clear') {
+      playerLookupStatus.style.display = 'none';
+      playerLookupStatus.textContent = '';
+      return;
+    }
+    playerLookupStatus.textContent = msg;
+    playerLookupStatus.className = `lookup-status-msg ${type}`;
+    playerLookupStatus.style.display = 'block';
   }
 
   // --- 1. Background Starfield ---
@@ -281,7 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
       const text = e.target.result;
       const now = new Date();
       const timestamp = now.toLocaleString('id-ID', {
@@ -323,7 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const lines = [];
     let row = [""];
     let inQuotes = false;
-    
+
     // Detect separator (comma vs semicolon)
     const firstLine = text.split(/\r?\n/)[0];
     const sep = firstLine.includes(';') ? ';' : ',';
@@ -381,7 +513,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const headers = rawRows[0];
-    
+
     // Find index of headers dynamically
     const nameIdx = findHeaderIndex(headers, ['nama peserta', 'name']);
     const emailIdx = findHeaderIndex(headers, ['email peserta', 'email']);
@@ -410,7 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const row = rawRows[i];
       // Skip empty lines
       if (row.length === 0 || (row.length === 1 && row[0] === '')) continue;
-      
+
       const name = (row[nameIdx] || '').trim();
       if (!name) continue;
 
@@ -419,7 +551,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const skillsList = splitBadgesList(row[skillsListIdx]);
       const arcadeCount = parseInt(row[arcadeCountIdx]) || 0;
       const arcadeList = splitBadgesList(row[arcadeListIdx]);
-      
+
       // Populate known badges sets
       skillsList.forEach(badge => knownSkillBadges.add(badge));
       arcadeList.forEach(badge => knownArcadeGames.add(badge));
@@ -436,7 +568,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const verifyStatus = (row[verifyStatusIdx] || 'Not yet submitted').trim();
       const gearBadge = (row[gearDigitalBadgeIdx] || '').trim();
-      
+
       const rawSkillsUrl = (row[skillsProfileIdx] || '').trim();
       const rawDevUrl = (row[devProfileIdx] || '').trim();
       const skillsUrl = (rawSkillsUrl.startsWith('http://') || rawSkillsUrl.startsWith('https://')) ? rawSkillsUrl : '';
@@ -539,7 +671,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return 0;
   }
 
-  // --- Prize Tier Helpers ---
+  // --- Tier Helpers ---
   function getPrizeTier(points) {
     if (points >= 120) {
       return {
@@ -580,6 +712,22 @@ document.addEventListener('DOMContentLoaded', () => {
     return null;
   }
 
+  function getNextPrizeTier(points) {
+    if (points < 50) {
+      return { key: 'trooper', name: 'Trooper', stars: '★', pointsReq: 50 };
+    }
+    if (points < 75) {
+      return { key: 'ranger', name: 'Ranger', stars: '★★', pointsReq: 75 };
+    }
+    if (points < 95) {
+      return { key: 'champion', name: 'Champion', stars: '★★★', pointsReq: 95 };
+    }
+    if (points < 120) {
+      return { key: 'legend', name: 'Legend', stars: '★★★★', pointsReq: 120 };
+    }
+    return null;
+  }
+
   function getPrizeTierHtml(points) {
     const tier = getPrizeTier(points);
     if (!tier) {
@@ -607,7 +755,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Filter
     filteredParticipants = parsedParticipants.filter(p => {
       const matchSearch = p.name.toLowerCase().includes(searchVal);
-      
+
       let matchMilestone = true;
       if (milestoneVal !== 'all') {
         const key = p.milestone.toLowerCase().replace(' ', '-');
@@ -659,35 +807,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderStats() {
     statTotalParticipants.textContent = parsedParticipants.length;
-    
-    const totalGames = parsedParticipants.reduce((sum, p) => sum + p.arcadeCount, 0);
-    const totalSkills = parsedParticipants.reduce((sum, p) => sum + p.skillsCount, 0);
-    
-    statTotalGames.textContent = totalGames;
-    statTotalSkills.textContent = totalSkills;
 
-    const tierCount = parsedParticipants.filter(p => p.points >= 50).length;
-    if (statTierCount) statTierCount.textContent = tierCount;
+    // Overall stats display total badges across all participants (including extended season)
+    const total_games = parsedParticipants.reduce((sum, p) => sum + p.arcadeCount, 0);
+    const total_skills = parsedParticipants.reduce((sum, p) => sum + p.skillsCount, 0);
 
-    // Render program-wide milestone tracker (targets: 400, 700, 1050, 1400)
-    renderMilestoneTracker(totalGames, totalSkills);
+    statTotalGames.textContent = total_games;
+    statTotalSkills.textContent = total_skills;
+
+    const tier_count = parsedParticipants.filter(p => p.points >= 50).length;
+    if (statTierCount) statTierCount.textContent = tier_count;
+
+    // Facilitator cumulative milestone targets evaluate strictly at cutoff (29 September 2026)
+    // CSV counts are pre-cutoff exports; live-synced participants track cutoffArcade & cutoffSkills separately
+    const total_cutoff_games = parsedParticipants.reduce((sum, p) => sum + (p.cutoffArcade !== undefined ? p.cutoffArcade : p.arcadeCount), 0);
+    const total_cutoff_skills = parsedParticipants.reduce((sum, p) => sum + (p.cutoffSkills !== undefined ? p.cutoffSkills : p.skillsCount), 0);
+
+    // Render program-wide milestone tracker with dual-quota AND logic evaluated at event cutoff
+    renderMilestoneTracker(total_cutoff_games, total_cutoff_skills);
   }
 
-  function renderMilestoneTracker(totalGames, totalSkills) {
-    const totalActual = totalGames + totalSkills;
-    const targets = [400, 700, 1050, 1400];
-    
-    for (let i = 1; i <= 4; i++) {
-      const target = targets[i - 1];
-      const percent = Math.min(100, Math.floor((totalActual / target) * 100));
-      
-      const pb = document.getElementById(`milestone-progress-bar-${i}`);
-      const percentText = document.getElementById(`milestone-progress-percent-${i}`);
-      const ratioText = document.getElementById(`milestone-progress-ratio-${i}`);
-      
+  function renderMilestoneTracker(total_games, total_skills) {
+    const milestone_targets = [
+      { games: 100, skills: 300, total: 400 },
+      { games: 200, skills: 500, total: 700 },
+      { games: 300, skills: 750, total: 1050 },
+      { games: 400, skills: 1000, total: 1400 }
+    ];
+
+    for (let i = 0; i < milestone_targets.length; i++) {
+      const target = milestone_targets[i];
+      const milestone_num = i + 1;
+
+      // Both games AND skill badges must reach their targets (AND logic, not unconstrained OR).
+      // Progression is strictly clamped: excess badges beyond this milestone's quota cannot compensate for missing games.
+      const effective_games = Math.min(total_games, target.games);
+      const effective_skills = Math.min(total_skills, target.skills);
+      const effective_total = effective_games + effective_skills;
+      const percent = Math.min(100, Math.floor((effective_total / target.total) * 100));
+
+      const pb = document.getElementById(`milestone-progress-bar-${milestone_num}`);
+      const percent_text = document.getElementById(`milestone-progress-percent-${milestone_num}`);
+      const ratio_text = document.getElementById(`milestone-progress-ratio-${milestone_num}`);
+
       if (pb) pb.style.width = `${percent}%`;
-      if (percentText) percentText.textContent = `${percent}% Completed`;
-      if (ratioText) ratioText.textContent = `${totalActual}/${target}`;
+      if (percent_text) percent_text.textContent = `${percent}% Completed`;
+      if (ratio_text) {
+        ratio_text.textContent = `${effective_total}/${target.total}`;
+        ratio_text.title = `${effective_games}/${target.games} Arcade Games, ${effective_skills}/${target.skills} Skill Badges`;
+      }
     }
   }
 
@@ -723,13 +891,13 @@ document.addEventListener('DOMContentLoaded', () => {
         profileButtons += `<a href="${safeDevUrl}" target="_blank" rel="noopener noreferrer" class="profile-link dev" title="Google Developer Profile">D</a>`;
       }
 
-      // Prize Tier HTML
+      // Tier HTML
       const prizeTierHtml = getPrizeTierHtml(p.points);
 
       // --- Desktop Row HTML ---
       const tr = document.createElement('tr');
       tr.style.cursor = 'pointer';
-      
+
       let diffHtml = '';
       if (p.diffPoints && p.diffPoints > 0) {
         diffHtml = `<span class="diff-badge positive">+${p.diffPoints} Live</span>`;
@@ -778,7 +946,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="milestone-badge ${milestoneClass}" style="transform: scale(0.9); transform-origin: left; width: fit-content;">${escapeHtml(p.milestone)}</span>
           </div>
           <div class="mobile-stat">
-            <span class="mobile-label">Prize Tier</span>
+            <span class="mobile-label">Tier</span>
             <span>${prizeTierHtml}</span>
           </div>
           <div class="mobile-stat" style="margin-top: 5px;">
@@ -801,17 +969,17 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="mobile-expanded-content" id="mobile-expanded-content-${rank}">
           <div class="badge-list-title">Game Arcade (${p.arcadeCount})</div>
           <div class="badge-tag-list">
-            ${p.arcadeList.length > 0 
-              ? p.arcadeList.map(b => `<span class="mini-badge-tag arcade-tag">${escapeHtml(b)}</span>`).join('')
-              : '<span style="color: var(--text-muted); font-size: 0.75rem;">Belum menyelesaikan game arcade</span>'
-            }
+            ${p.arcadeList.length > 0
+          ? p.arcadeList.map(b => `<span class="mini-badge-tag arcade-tag">${escapeHtml(b)}</span>`).join('')
+          : '<span style="color: var(--text-muted); font-size: 0.75rem;">Belum menyelesaikan game arcade</span>'
+        }
           </div>
           <div class="badge-list-title">Badge Keahlian (${p.skillsCount})</div>
           <div class="badge-tag-list">
-            ${p.skillsList.length > 0 
-              ? p.skillsList.map(b => `<span class="mini-badge-tag skill-tag">${escapeHtml(b)}</span>`).join('')
-              : '<span style="color: var(--text-muted); font-size: 0.75rem;">Belum menyelesaikan badge keahlian</span>'
-            }
+            ${p.skillsList.length > 0
+          ? p.skillsList.map(b => `<span class="mini-badge-tag skill-tag">${escapeHtml(b)}</span>`).join('')
+          : '<span style="color: var(--text-muted); font-size: 0.75rem;">Belum menyelesaikan badge keahlian</span>'
+        }
           </div>
           <div class="badge-list-title">Verifikasi AI Agent</div>
           <p style="font-size: 0.75rem;">Status: ${escapeHtml(p.verifyStatus)}</p>
@@ -850,7 +1018,7 @@ document.addEventListener('DOMContentLoaded', () => {
     modalMilestoneBadge.textContent = p.milestone;
     modalMilestoneBadge.className = `milestone-badge ${getMilestoneClass(p.milestone)}`;
 
-    // Prize Tier in modal
+    // Tier in modal
     const tier = getPrizeTier(p.points);
     if (tier) {
       modalTierBadge.innerHTML = `<span class="tier-stars">${tier.stars}</span> ${tier.name} (${tier.pointsReq}+ Pts)`;
@@ -910,12 +1078,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Render badges list
     modalArcadeCount.textContent = p.arcadeCount;
-    modalArcadeList.innerHTML = p.arcadeList.length > 0 
+    modalArcadeList.innerHTML = p.arcadeList.length > 0
       ? p.arcadeList.map(b => `<span class="mini-badge-tag arcade-tag">${escapeHtml(b)}</span>`).join('')
       : '<span style="color: var(--text-muted); font-size: 0.85rem;">Belum ada arcade game yang selesai.</span>';
 
     modalSkillCount.textContent = p.skillsCount;
-    modalSkillList.innerHTML = p.skillsList.length > 0 
+    modalSkillList.innerHTML = p.skillsList.length > 0
       ? p.skillsList.map(b => `<span class="mini-badge-tag skill-tag">${escapeHtml(b)}</span>`).join('')
       : '<span style="color: var(--text-muted); font-size: 0.85rem;">Belum ada lencana keahlian yang selesai.</span>';
 
@@ -993,14 +1161,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (spinner) {
       spinner.style.display = showSpinner ? 'block' : 'none';
     }
-    
+
     statusToast.classList.remove('success', 'warning', 'error');
     if (toast_type) {
       statusToast.classList.add(toast_type);
     }
-    
+
     statusToast.style.display = 'flex';
-    
+
     if (duration > 0) {
       setTimeout(hideToast, duration);
     }
@@ -1075,7 +1243,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const slide = document.createElement('div');
     slide.className = 'export-slide';
-    
+
     // Header
     const header = document.createElement('div');
     header.className = 'export-slide-header';
@@ -1097,22 +1265,22 @@ document.addEventListener('DOMContentLoaded', () => {
           <th>Milestone</th>
           <th style="width: 110px; text-align: center;">Game</th>
           <th style="width: 110px; text-align: center;">Skill</th>
-          <th>Prize Tier</th>
+          <th>Tier</th>
         </tr>
       </thead>
       <tbody>
         ${participantsChunk.map((p, idx) => {
-          // Rank calculation based on page size of 10
-          const rank = (pageIndex - 1) * 10 + idx + 1;
-          let rankClass = '';
-          if (rank === 1) rankClass = 'rank-1';
-          else if (rank === 2) rankClass = 'rank-2';
-          else if (rank === 3) rankClass = 'rank-3';
+      // Rank calculation based on page size of 10
+      const rank = (pageIndex - 1) * 10 + idx + 1;
+      let rankClass = '';
+      if (rank === 1) rankClass = 'rank-1';
+      else if (rank === 2) rankClass = 'rank-2';
+      else if (rank === 3) rankClass = 'rank-3';
 
-          const milestoneClass = getMilestoneClass(p.milestone);
-          const prizeTierHtml = getPrizeTierHtml(p.points);
-          
-          return `
+      const milestoneClass = getMilestoneClass(p.milestone);
+      const prizeTierHtml = getPrizeTierHtml(p.points);
+
+      return `
             <tr>
               <td style="text-align: center;"><span class="rank-badge ${rankClass}" style="transform: scale(0.85);">${rank}</span></td>
               <td class="name-cell" style="font-size: 0.9rem;">${escapeHtml(p.name)}</td>
@@ -1123,7 +1291,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <td>${prizeTierHtml}</td>
             </tr>
           `;
-        }).join('')}
+    }).join('')}
       </tbody>
     `;
     slide.appendChild(table);
@@ -1131,11 +1299,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Footer
     const footer = document.createElement('div');
     footer.className = 'export-slide-footer';
-    
+
     // Add date/timestamp
     const now = new Date();
     const dateStr = now.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
-    
+
     footer.innerHTML = `
       <div>Laporan Leaderboard Google Cloud Arcade Facilitator • ${dateStr} • Created by Schryzon</div>
       <div class="export-slide-footer-logo">Google Cloud Arcade</div>
@@ -1152,19 +1320,19 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('Tidak ada data untuk diekspor.');
       return;
     }
-    
+
     showToast('Menyiapkan gambar leaderboard panjang...');
-    
+
     // Build vertical long dashboard layout in off-screen render area
     exportLongRenderArea.innerHTML = '';
-    
+
     const container = document.createElement('div');
     container.style.padding = '40px';
     container.style.display = 'flex';
     container.style.flexDirection = 'column';
     container.style.gap = '30px';
     container.style.background = 'var(--bg-primary)';
-    
+
     // Banner
     const banner = document.createElement('div');
     banner.style.textAlign = 'center';
@@ -1195,7 +1363,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="stat-value" style="font-size: 1.5rem;">${parsedParticipants.reduce((sum, p) => sum + p.skillsCount, 0)}</div>
       </div>
       <div class="stat-card gold">
-        <div class="stat-label">Prize Tier Achievers</div>
+        <div class="stat-label">Tier Achievers</div>
         <div class="stat-value" style="font-size: 1.5rem;">${parsedParticipants.filter(p => p.points >= 50).length}</div>
       </div>
     `;
@@ -1209,7 +1377,7 @@ document.addEventListener('DOMContentLoaded', () => {
     table.style.background = 'var(--bg-card)';
     table.style.border = '1px solid var(--border-color)';
     table.style.borderRadius = '10px';
-    
+
     table.innerHTML = `
       <thead>
         <tr>
@@ -1219,21 +1387,21 @@ document.addEventListener('DOMContentLoaded', () => {
           <th style="border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Milestone</th>
           <th style="width: 120px; text-align: center; border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Game</th>
           <th style="width: 120px; text-align: center; border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Skill</th>
-          <th style="border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Prize Tier</th>
+          <th style="border-bottom: 2px solid rgba(0,242,254,0.2); padding: 12px 15px;">Tier</th>
         </tr>
       </thead>
       <tbody>
         ${filteredParticipants.map((p, idx) => {
-          const rank = idx + 1;
-          let rankClass = '';
-          if (rank === 1) rankClass = 'rank-1';
-          else if (rank === 2) rankClass = 'rank-2';
-          else if (rank === 3) rankClass = 'rank-3';
+      const rank = idx + 1;
+      let rankClass = '';
+      if (rank === 1) rankClass = 'rank-1';
+      else if (rank === 2) rankClass = 'rank-2';
+      else if (rank === 3) rankClass = 'rank-3';
 
-          const milestoneClass = getMilestoneClass(p.milestone);
-          const prizeTierHtml = getPrizeTierHtml(p.points);
-          
-          return `
+      const milestoneClass = getMilestoneClass(p.milestone);
+      const prizeTierHtml = getPrizeTierHtml(p.points);
+
+      return `
             <tr>
               <td style="text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 12px 15px;"><span class="rank-badge ${rankClass}" style="transform: scale(0.85);">${rank}</span></td>
               <td class="name-cell" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 12px 15px; font-size: 0.95rem;">${escapeHtml(p.name)}</td>
@@ -1244,7 +1412,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <td style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 12px 15px;">${prizeTierHtml}</td>
             </tr>
           `;
-        }).join('')}
+    }).join('')}
       </tbody>
     `;
     container.appendChild(table);
@@ -1277,13 +1445,13 @@ document.addEventListener('DOMContentLoaded', () => {
           useCORS: true,
           logging: false
         });
-        
+
         // Trigger download
         const link = document.createElement('a');
         link.download = `Arcade_Leaderboard_Full_${getFilenameTimestamp()}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
-        
+
         hideToast();
       } catch (err) {
         console.error(err);
@@ -1299,7 +1467,7 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('Tidak ada data untuk diekspor.');
       return;
     }
-    
+
     // Chunk array by 10 (10 rows per 16:9 slide is ideal for legibility and proportions)
     const chunks = chunkArray(filteredParticipants, 10);
     showToast(`Menyiapkan PDF 16:9 (${chunks.length} Halaman)...`);
@@ -1316,10 +1484,10 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       for (let i = 0; i < chunks.length; i++) {
         showToast(`Membuat halaman ${i + 1} dari ${chunks.length}...`);
-        
+
         // Render current page DOM
         generateSlideDOM(chunks[i], i + 1, chunks.length);
-        
+
         // Let fonts render
         await new Promise(r => setTimeout(r, 100));
 
@@ -1367,10 +1535,10 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       for (let i = 0; i < chunks.length; i++) {
         showToast(`Merender gambar ${i + 1} dari ${chunks.length}...`);
-        
+
         // Render page DOM
         generateSlideDOM(chunks[i], i + 1, chunks.length);
-        
+
         // Wait for render
         await new Promise(r => setTimeout(r, 100));
 
@@ -1386,14 +1554,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Convert canvas to blob
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-        
+
         // Add to zip file structure
         zip.file(`arcade_leaderboard_page_${i + 1}.png`, blob);
       }
 
       showToast('Mengompresi berkas ZIP...');
       const zipBlob = await zip.generateAsync({ type: 'blob' });
-      
+
       const link = document.createElement('a');
       link.download = `Arcade_Leaderboard_Slides_${getFilenameTimestamp()}.zip`;
       link.href = URL.createObjectURL(zipBlob);
@@ -1445,9 +1613,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlText, 'text/html');
 
+    // Extract profile name and avatar if available
+    const nameEl = doc.querySelector('h1.ql-headline-medium') || doc.querySelector('h1');
+    const playerName = nameEl ? nameEl.textContent.trim() : 'Peserta Google Skills';
+    const avatarEl = doc.querySelector('.profile-avatar img') || doc.querySelector('ql-avatar img');
+    const avatarUrl = avatarEl ? (avatarEl.getAttribute('src') || '') : '';
+
     const badgeElements = doc.querySelectorAll('.profile-badge');
-    const arcadeList = [];
-    const skillsList = [];
+    const eventArcadeList = [];
+    const eventSkillsList = [];
+    const extendedArcadeList = [];
+    const extendedSkillsList = [];
+    const allBadgesAudit = [];
 
     badgeElements.forEach(badgeEl => {
       const titleEl = badgeEl.querySelector('.ql-title-medium');
@@ -1456,44 +1633,85 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const earnedEl = badgeEl.querySelector('.ql-body-medium.l-mbs');
       const earnedText = earnedEl ? earnedEl.textContent.trim() : '';
-      if (!isBadgeDateValid(earnedText)) return;
+      const dateCategory = getBadgeDateCategory(earnedText);
 
       const dialogId = badgeEl.querySelector('ql-button') ? badgeEl.querySelector('ql-button').getAttribute('modal') : '';
       const dialog = dialogId ? doc.getElementById(dialogId) : null;
-      
+
       const learnMoreBtn = dialog ? dialog.querySelector('ql-button[slot="action"]') : null;
       const href = learnMoreBtn ? (learnMoreBtn.getAttribute('href') || '') : '';
       const description = dialog ? (dialog.querySelector('p') ? dialog.querySelector('p').textContent.toLowerCase() : '') : '';
 
-      let type = 'ignored';
+      let baseType = 'ignored';
       if (customClassifications[title]) {
-        type = customClassifications[title];
+        baseType = customClassifications[title];
       } else {
         const isArcade = href.includes('/games/');
-        const isSkill = description.includes('skill badge') || 
-                        description.includes('badge keahlian') || 
-                        description.includes('lencana keahlian');
-        if (isArcade) type = 'arcade';
-        else if (isSkill) type = 'skill';
+        const isSkill = description.includes('skill badge') ||
+          description.includes('badge keahlian') ||
+          description.includes('lencana keahlian');
+        if (isArcade) baseType = 'arcade';
+        else if (isSkill) baseType = 'skill';
       }
 
-      if (type === 'arcade') arcadeList.push(title);
-      else if (type === 'skill') skillsList.push(title);
+      allBadgesAudit.push({
+        title,
+        earnedText,
+        baseType,
+        dateCategory,
+        href,
+        description
+      });
+
+      if (dateCategory === 'invalid') return;
+
+      if (dateCategory === 'event') {
+        if (baseType === 'arcade') eventArcadeList.push(title);
+        else if (baseType === 'skill') eventSkillsList.push(title);
+      } else if (dateCategory === 'extended') {
+        if (baseType === 'arcade') extendedArcadeList.push(title);
+        else if (baseType === 'skill') extendedSkillsList.push(title);
+      }
     });
 
-    const arcadeCount = arcadeList.length;
-    const skillsCount = skillsList.length;
-    const milestone = getCalculatedMilestone(arcadeCount, skillsCount);
+    const cutoffArcadeCount = eventArcadeList.length;
+    const cutoffSkillsCount = eventSkillsList.length;
+    const extendedArcadeCount = extendedArcadeList.length;
+    const extendedSkillsCount = extendedSkillsList.length;
+
+    const totalArcadeCount = cutoffArcadeCount + extendedArcadeCount;
+    const totalSkillsCount = cutoffSkillsCount + extendedSkillsCount;
+
+    // Player milestone is evaluated strictly against badges earned on or before event cutoff (29 Sept 2026)
+    const milestone = getCalculatedMilestone(cutoffArcadeCount, cutoffSkillsCount);
     const milestoneBonus = getMilestoneBonus(milestone);
-    const points = arcadeCount * 1 + Math.floor(skillsCount / 2) + milestoneBonus + (hasBonus ? 10 : 0);
+
+    // Total points combines total eligible badges (event + extended) plus cutoff milestone bonus and gear bonus
+    const points = totalArcadeCount * 1 + Math.floor(totalSkillsCount / 2) + milestoneBonus + (hasBonus ? 10 : 0);
+
+    const arcadeList = [...eventArcadeList, ...extendedArcadeList];
+    const skillsList = [...eventSkillsList, ...extendedSkillsList];
 
     return {
-      arcadeCount,
-      skillsCount,
+      playerName,
+      avatarUrl,
+      cutoffArcadeCount,
+      cutoffSkillsCount,
+      extendedArcadeCount,
+      extendedSkillsCount,
+      arcadeCount: totalArcadeCount,
+      skillsCount: totalSkillsCount,
+      eventArcadeList,
+      eventSkillsList,
+      extendedArcadeList,
+      extendedSkillsList,
       arcadeList,
       skillsList,
+      allBadgesAudit,
       points,
-      milestone
+      milestone,
+      milestoneBonus,
+      hasBonus: Boolean(hasBonus)
     };
   }
 
@@ -1527,15 +1745,29 @@ document.addEventListener('DOMContentLoaded', () => {
           const stats = await fetchAndParseProfile(p.skillsUrl, p.hasBonus);
           if (stats) {
             profileCache[p.skillsUrl] = {
+              playerName: stats.playerName,
+              avatarUrl: stats.avatarUrl,
+              cutoffArcadeCount: stats.cutoffArcadeCount,
+              cutoffSkillsCount: stats.cutoffSkillsCount,
+              extendedArcadeCount: stats.extendedArcadeCount,
+              extendedSkillsCount: stats.extendedSkillsCount,
               arcadeCount: stats.arcadeCount,
               skillsCount: stats.skillsCount,
               points: stats.points,
               milestone: stats.milestone,
+              eventArcadeList: stats.eventArcadeList,
+              eventSkillsList: stats.eventSkillsList,
+              extendedArcadeList: stats.extendedArcadeList,
+              extendedSkillsList: stats.extendedSkillsList,
               arcadeList: stats.arcadeList,
               skillsList: stats.skillsList,
               lastSynced: new Date().getTime()
             };
-            
+
+            p.cutoffArcade = stats.cutoffArcadeCount;
+            p.cutoffSkills = stats.cutoffSkillsCount;
+            p.extendedArcade = stats.extendedArcadeCount;
+            p.extendedSkills = stats.extendedSkillsCount;
             p.arcadeCount = stats.arcadeCount;
             p.skillsCount = stats.skillsCount;
             p.arcadeList = stats.arcadeList;
@@ -1565,7 +1797,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     safeSetStorage('arcade_profile_cache', JSON.stringify(profileCache));
     updateLeaderboard();
-    
+
     if (sync_fail_count === total_participants) {
       showToast(`Sinkronisasi gagal (${last_sync_error || 'Koneksi/CSP error'})`, false, 5000, 'error');
     } else if (sync_fail_count > 0) {
@@ -1573,7 +1805,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       showToast('Sinkronisasi profil selesai!', false, 2000, 'success');
     }
-    
+
     setTimeout(() => {
       progressContainer.style.display = 'none';
       syncLiveBtn.disabled = false;
@@ -1640,51 +1872,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderLiveVerifyList(rawBadges) {
     modalLiveBadgeList.innerHTML = '';
-    
+
     const processedBadges = rawBadges.map(badge => {
       let type = 'ignored';
-      if (!isBadgeDateValid(badge.earnedText)) {
+      const dateCategory = getBadgeDateCategory(badge.earnedText);
+
+      if (dateCategory === 'invalid') {
         type = 'invalid-date';
       } else if (customClassifications[badge.title]) {
         type = customClassifications[badge.title];
       } else {
         const isArcade = badge.href.includes('/games/');
-        const isSkill = badge.description.includes('skill badge') || 
-                        badge.description.includes('badge keahlian') || 
-                        badge.description.includes('lencana keahlian');
+        const isSkill = badge.description.includes('skill badge') ||
+          badge.description.includes('badge keahlian') ||
+          badge.description.includes('lencana keahlian');
         if (isArcade) type = 'arcade';
         else if (isSkill) type = 'skill';
       }
-      return { title: badge.title, type, earnedText: badge.earnedText };
+      return { title: badge.title, type, dateCategory, earnedText: badge.earnedText };
     });
 
-    const arcadeList = processedBadges.filter(b => b.type === 'arcade').map(b => b.title);
-    const skillsList = processedBadges.filter(b => b.type === 'skill').map(b => b.title);
-    const liveMilestone = getCalculatedMilestone(arcadeList.length, skillsList.length);
+    const eventArcade = processedBadges.filter(b => b.type === 'arcade' && b.dateCategory === 'event').map(b => b.title);
+    const eventSkills = processedBadges.filter(b => b.type === 'skill' && b.dateCategory === 'event').map(b => b.title);
+    const extendedArcade = processedBadges.filter(b => b.type === 'arcade' && b.dateCategory === 'extended').map(b => b.title);
+    const extendedSkills = processedBadges.filter(b => b.type === 'skill' && b.dateCategory === 'extended').map(b => b.title);
+
+    const totalArcade = eventArcade.length + extendedArcade.length;
+    const totalSkills = eventSkills.length + extendedSkills.length;
+
+    // Official milestone evaluated strictly on event cutoff badges (<= 29 Sep 2026)
+    const liveMilestone = getCalculatedMilestone(eventArcade.length, eventSkills.length);
     const liveMilestoneBonus = getMilestoneBonus(liveMilestone);
-    const livePoints = arcadeList.length * 1 + Math.floor(skillsList.length / 2) + liveMilestoneBonus + (activeModalParticipant.hasBonus ? 10 : 0);
+    const livePoints = totalArcade * 1 + Math.floor(totalSkills / 2) + liveMilestoneBonus + (activeModalParticipant.hasBonus ? 10 : 0);
 
     tempLiveStats = {
-      arcadeCount: arcadeList.length,
-      skillsCount: skillsList.length,
-      arcadeList,
-      skillsList,
+      cutoffArcadeCount: eventArcade.length,
+      cutoffSkillsCount: eventSkills.length,
+      extendedArcadeCount: extendedArcade.length,
+      extendedSkillsCount: extendedSkills.length,
+      arcadeCount: totalArcade,
+      skillsCount: totalSkills,
+      arcadeList: [...eventArcade, ...extendedArcade],
+      skillsList: [...eventSkills, ...extendedSkills],
+      eventArcadeList: eventArcade,
+      eventSkillsList: eventSkills,
+      extendedArcadeList: extendedArcade,
+      extendedSkillsList: extendedSkills,
       points: livePoints,
       milestone: liveMilestone
     };
 
     const isDiff = tempLiveStats.points !== activeModalParticipant.points ||
-                   tempLiveStats.arcadeCount !== activeModalParticipant.arcadeCount ||
-                   tempLiveStats.skillsCount !== activeModalParticipant.skillsCount;
+      tempLiveStats.arcadeCount !== activeModalParticipant.arcadeCount ||
+      tempLiveStats.skillsCount !== activeModalParticipant.skillsCount;
 
     let summaryHtml = `
       <div style="margin-bottom: 8px;">Ditemukan <strong>${processedBadges.length} Lencana Total</strong> di profil live:</div>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: var(--font-stats); font-size: 0.8rem; margin-top: 5px;">
         <div style="border-left: 2px solid var(--accent-cyan); padding-left: 5px;">
-          Live: 🎮 ${tempLiveStats.arcadeCount} | 🏆 ${tempLiveStats.skillsCount} | Poin: ${tempLiveStats.points}
+          Live Total: 🎮 ${tempLiveStats.arcadeCount} | 🏆 ${tempLiveStats.skillsCount} | Poin: ${tempLiveStats.points}
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+            (Event: 🎮 ${tempLiveStats.cutoffArcadeCount}, 🏆 ${tempLiveStats.cutoffSkillsCount} → ${liveMilestone})<br>
+            (Lanjutan: +🎮 ${tempLiveStats.extendedArcadeCount}, +🏆 ${tempLiveStats.extendedSkillsCount})
+          </div>
         </div>
         <div style="border-left: 2px solid var(--text-muted); padding-left: 5px; color: var(--text-muted);">
           CSV: 🎮 ${activeModalParticipant.csvArcadeCount} | 🏆 ${activeModalParticipant.csvSkillsCount} | Poin: ${activeModalParticipant.csvPoints}
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+            Milestone CSV: ${activeModalParticipant.milestone}
+          </div>
         </div>
       </div>
     `;
@@ -1703,7 +1959,7 @@ document.addEventListener('DOMContentLoaded', () => {
     processedBadges.forEach(b => {
       const row = document.createElement('div');
       row.className = 'live-badge-item';
-      
+
       let btnText = 'Ignored';
       let btnClass = 'ignored';
       if (b.type === 'arcade') {
@@ -1717,8 +1973,15 @@ document.addEventListener('DOMContentLoaded', () => {
         btnClass = 'invalid-date';
       }
 
+      let dateTag = '';
+      if (b.dateCategory === 'event') {
+        dateTag = '<span class="badge-tag-event" style="margin-left: 6px;">Event (s.d. 29 Sep)</span>';
+      } else if (b.dateCategory === 'extended') {
+        dateTag = '<span class="badge-tag-extended" style="margin-left: 6px;">Musim Lanjutan (s.d. 31 Des)</span>';
+      }
+
       row.innerHTML = `
-        <span class="live-badge-title">${escapeHtml(b.title)}</span>
+        <span class="live-badge-title">${escapeHtml(b.title)} ${dateTag}</span>
         <button class="live-badge-type-toggle ${btnClass}" data-title="${escapeHtml(b.title)}">${btnText}</button>
       `;
 
@@ -1737,7 +2000,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           customClassifications[b.title] = nextType;
           safeSetStorage('arcade_custom_badge_classifications', JSON.stringify(customClassifications));
-          
+
           renderLiveVerifyList(rawBadges);
         });
       }
@@ -1752,19 +2015,27 @@ document.addEventListener('DOMContentLoaded', () => {
   function applySingleProfileLiveStats() {
     if (!activeModalParticipant || !tempLiveStats) return;
 
+    activeModalParticipant.cutoffArcade = tempLiveStats.cutoffArcadeCount;
+    activeModalParticipant.cutoffSkills = tempLiveStats.cutoffSkillsCount;
+    activeModalParticipant.extendedArcade = tempLiveStats.extendedArcadeCount;
+    activeModalParticipant.extendedSkills = tempLiveStats.extendedSkillsCount;
     activeModalParticipant.arcadeCount = tempLiveStats.arcadeCount;
     activeModalParticipant.skillsCount = tempLiveStats.skillsCount;
     activeModalParticipant.arcadeList = tempLiveStats.arcadeList;
     activeModalParticipant.skillsList = tempLiveStats.skillsList;
     activeModalParticipant.points = tempLiveStats.points;
     activeModalParticipant.milestone = tempLiveStats.milestone;
-    
-    activeModalParticipant.diffCount = (tempLiveStats.arcadeCount + tempLiveStats.skillsCount) - 
-                                       (activeModalParticipant.csvArcadeCount + activeModalParticipant.csvSkillsCount);
+
+    activeModalParticipant.diffCount = (tempLiveStats.arcadeCount + tempLiveStats.skillsCount) -
+      (activeModalParticipant.csvArcadeCount + activeModalParticipant.csvSkillsCount);
     activeModalParticipant.diffPoints = tempLiveStats.points - activeModalParticipant.csvPoints;
     activeModalParticipant.lastSynced = new Date().getTime();
 
     profileCache[activeModalParticipant.skillsUrl] = {
+      cutoffArcadeCount: tempLiveStats.cutoffArcadeCount,
+      cutoffSkillsCount: tempLiveStats.cutoffSkillsCount,
+      extendedArcadeCount: tempLiveStats.extendedArcadeCount,
+      extendedSkillsCount: tempLiveStats.extendedSkillsCount,
       arcadeCount: tempLiveStats.arcadeCount,
       skillsCount: tempLiveStats.skillsCount,
       points: tempLiveStats.points,
@@ -1780,14 +2051,14 @@ document.addEventListener('DOMContentLoaded', () => {
     modalPoints.textContent = `Total Poin: ${activeModalParticipant.points} Poin (Peringkat #${activeParticipantIndex()})`;
     modalMilestoneBadge.textContent = activeModalParticipant.milestone;
     modalMilestoneBadge.className = `milestone-badge ${getMilestoneClass(activeModalParticipant.milestone)}`;
-    
+
     modalArcadeCount.textContent = activeModalParticipant.arcadeCount;
-    modalArcadeList.innerHTML = activeModalParticipant.arcadeList.length > 0 
+    modalArcadeList.innerHTML = activeModalParticipant.arcadeList.length > 0
       ? activeModalParticipant.arcadeList.map(b => `<span class="mini-badge-tag arcade-tag">${escapeHtml(b)}</span>`).join('')
       : '<span style="color: var(--text-muted); font-size: 0.85rem;">Belum ada arcade game yang selesai.</span>';
 
     modalSkillCount.textContent = activeModalParticipant.skillsCount;
-    modalSkillList.innerHTML = activeModalParticipant.skillsList.length > 0 
+    modalSkillList.innerHTML = activeModalParticipant.skillsList.length > 0
       ? activeModalParticipant.skillsList.map(b => `<span class="mini-badge-tag skill-tag">${escapeHtml(b)}</span>`).join('')
       : '<span style="color: var(--text-muted); font-size: 0.85rem;">Belum ada lencana keahlian yang selesai.</span>';
 
@@ -1807,6 +2078,251 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const nIdx = filteredParticipants.findIndex(p => p.name === activeModalParticipant.name);
     return nIdx !== -1 ? nIdx + 1 : 1;
+  }
+
+  // --- Dedicated Individual Player Scorecard Renderer ---
+  function renderIndividualScorecard(stats, url) {
+    if (!individualTrackerSection) return;
+
+    const prize_tier = getPrizeTier(stats.points);
+    const next_tier = getNextPrizeTier(stats.points);
+    const milestone_class = getMilestoneClass(stats.milestone);
+    const safe_url = sanitizeUrl(url);
+
+    let next_tier_html = '';
+    if (next_tier) {
+      const needed_points = next_tier.pointsReq - stats.points;
+      const progress_percent = Math.min(100, Math.floor((stats.points / next_tier.pointsReq) * 100));
+      next_tier_html = `
+        <div style="margin-top: 10px;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 5px;">
+            <span>Menuju ${next_tier.stars} ${next_tier.name} (${next_tier.pointsReq} Poin)</span>
+            <span style="font-weight: 600; color: var(--accent-cyan);">${needed_points} Poin lagi</span>
+          </div>
+          <div class="progress-container" style="height: 10px;">
+            <div class="progress-bar" style="width: ${progress_percent}%; background: var(--accent-cyan);"></div>
+          </div>
+        </div>
+      `;
+    } else {
+      next_tier_html = `<div style="font-size: 0.78rem; color: var(--accent-gold); margin-top: 8px;">Tingkat hadiah tertinggi (Legend) telah tercapai!</div>`;
+    }
+
+    const event_badges_count = stats.cutoffArcadeCount + stats.cutoffSkillsCount;
+    const extended_badges_count = stats.extendedArcadeCount + stats.extendedSkillsCount;
+    const extended_points = stats.extendedArcadeCount + Math.floor(stats.extendedSkillsCount / 2);
+
+    let html = `
+      <div class="player-tracker-hero">
+        <div class="player-hero-profile">
+          ${stats.avatarUrl ? `<img src="${stats.avatarUrl}" class="player-avatar" alt="Avatar">` : `<div class="player-avatar-placeholder">👤</div>`}
+          <div>
+            <div class="player-hero-name">${escapeHtml(stats.playerName)}</div>
+            <div class="player-hero-meta">
+              <span>Google Skills Public Profile</span>
+              <span>•</span>
+              <span style="color: var(--accent-green);">Terverifikasi Live</span>
+            </div>
+          </div>
+        </div>
+        <div class="player-hero-actions">
+          ${safe_url ? `<a href="${safe_url}" target="_blank" rel="noopener noreferrer" class="btn" style="padding: 8px 16px; font-size: 0.8rem; background: rgba(0, 243, 255, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan);">Buka Profil Skills</a>` : ''}
+          <button type="button" class="btn" id="player-refresh-btn" style="padding: 8px 16px; font-size: 0.8rem;">Segarkan Data</button>
+          <button type="button" class="btn btn-secondary" id="player-change-btn" style="padding: 8px 16px; font-size: 0.8rem;">Ganti Akun</button>
+        </div>
+      </div>
+
+      <div class="player-cards-grid">
+        <!-- Card 1: Event Milestone Status (Cutoff 29 Sep 2026) -->
+        <div class="player-card event-card">
+          <div class="player-card-header">
+            <div>
+              <div class="player-card-title" style="color: var(--accent-gold);">Milestone Event Fasilitator</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Batas Akhir: 29 September 2026</div>
+            </div>
+            <span class="pill-tag locked">Terkunci (Final)</span>
+          </div>
+          <div>
+            <div class="milestone-badge ${milestone_class}" style="font-size: 0.9rem; padding: 6px 14px; display: inline-block;">
+              ${escapeHtml(stats.milestone)}
+            </div>
+            <div style="font-size: 0.82rem; color: var(--text-primary); margin-top: 10px; font-family: var(--font-stats);">
+              🎮 ${stats.cutoffArcadeCount} Arcade Games &nbsp;|&nbsp; 🏆 ${stats.cutoffSkillsCount} Skill Badges
+            </div>
+            <div style="font-size: 0.78rem; color: var(--accent-gold); margin-top: 4px;">
+              Bonus Poin Milestone: <strong>+${stats.milestoneBonus} Poin</strong>
+              ${stats.hasBonus ? ` &nbsp;|&nbsp; Bonus GEAR: <strong>+10 Poin</strong>` : ''}
+            </div>
+          </div>
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
+            Program fasilitator Indonesia telah berakhir pada 29 September 2026 (23:59 GMT+7). Milestone dan bonus poin ini bersifat resmi dan tidak berubah.
+          </p>
+        </div>
+
+        <!-- Card 2: Extended Arcade Season (30 Sep - 31 Des 2026) -->
+        <div class="player-card extended-card">
+          <div class="player-card-header">
+            <div>
+              <div class="player-card-title" style="color: var(--accent-cyan);">Musim Lanjutan Arcade</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Periode: 30 Sep - 31 Des 2026</div>
+            </div>
+            <span class="pill-tag active-season">Aktif</span>
+          </div>
+          <div>
+            <div class="player-stat-big" style="color: var(--accent-cyan);">
+              +${extended_badges_count} <span style="font-size: 1rem; font-weight: 500; color: var(--text-secondary);">Lencana Baru</span>
+            </div>
+            <div style="font-size: 0.82rem; color: var(--text-primary); margin-top: 8px; font-family: var(--font-stats);">
+              +🎮 ${stats.extendedArcadeCount} Arcade Games &nbsp;|&nbsp; +🏆 ${stats.extendedSkillsCount} Skill Badges
+            </div>
+            <div style="font-size: 0.78rem; color: var(--accent-cyan); margin-top: 4px;">
+              Poin Tambahan Musim Lanjutan: <strong>+${extended_points} Poin</strong>
+            </div>
+          </div>
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
+            Lencana setelah 29 September tetap dihitung ke akumulasi poin musim global Arcade dan membantu Anda membuka Tier!
+          </p>
+        </div>
+
+        <!-- Card 3: Total Points & Tier -->
+        <div class="player-card points-card">
+          <div class="player-card-header">
+            <div>
+              <div class="player-card-title" style="color: var(--accent-green);">Akumulasi Skor & Hadiah</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Total Poin Musim 2026</div>
+            </div>
+            <span class="pill-tag total">Akumulasi</span>
+          </div>
+          <div>
+            <div class="player-stat-big" style="color: var(--accent-green);">
+              ${stats.points} <span style="font-size: 1rem; font-weight: 500; color: var(--text-secondary);">Poin</span>
+            </div>
+            <div style="margin-top: 8px;">
+              ${prize_tier ? `
+                <span class="prize-tier-badge ${prize_tier.className}">
+                  ${prize_tier.stars} ${prize_tier.name} (${prize_tier.pointsReq} Pts)
+                </span>
+              ` : `
+                <span class="prize-tier-badge tier-none">Belum Masuk Tier (&lt; 50 Poin)</span>
+              `}
+            </div>
+            ${next_tier_html}
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">
+            Total Terverifikasi: 🎮 ${stats.arcadeCount} Games | 🏆 ${stats.skillsCount} Badges
+          </div>
+        </div>
+      </div>
+
+      <!-- Badge Audit Section -->
+      <div class="badge-audit-container">
+        <h4 style="margin: 0 0 14px 0; font-family: var(--font-retro); font-size: 0.95rem; color: var(--text-primary); letter-spacing: 1px;">
+          Audit Rincian Lencana (${stats.allBadgesAudit.length} Terdeteksi)
+        </h4>
+        <div class="badge-audit-tabs">
+          <button type="button" class="audit-tab-btn active" data-tab="event">
+            Lencana Event (s.d. 29 Sep) [${event_badges_count}]
+          </button>
+          <button type="button" class="audit-tab-btn" data-tab="extended">
+            Musim Lanjutan (30 Sep - 31 Des) [${extended_badges_count}]
+          </button>
+          <button type="button" class="audit-tab-btn" data-tab="other">
+            Lainnya / Non-Skill [${stats.allBadgesAudit.length - (event_badges_count + extended_badges_count)}]
+          </button>
+        </div>
+        <div id="audit-badge-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; padding-right: 4px;">
+          <!-- Dynamically populated tab items -->
+        </div>
+      </div>
+    `;
+
+    individualTrackerSection.innerHTML = html;
+    individualTrackerSection.style.display = 'flex';
+
+    // Hook up action buttons inside rendered section
+    const refreshBtn = document.getElementById('player-refresh-btn');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', async () => {
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = 'Menyegarkan...';
+        try {
+          const freshStats = await fetchAndParseProfile(url, stats.hasBonus);
+          if (freshStats) {
+            renderIndividualScorecard(freshStats, url);
+          }
+        } catch (err) {
+          alert(`Gagal menyegarkan data: ${err.message}`);
+          refreshBtn.disabled = false;
+          refreshBtn.textContent = 'Segarkan Data';
+        }
+      });
+    }
+
+    const changeBtn = document.getElementById('player-change-btn');
+    if (changeBtn) {
+      changeBtn.addEventListener('click', () => {
+        individualTrackerSection.style.display = 'none';
+        playerLookupContainer.style.display = 'block';
+        if (playerUrlInput) {
+          playerUrlInput.focus();
+        }
+      });
+    }
+
+    // Hook up audit tabs
+    const auditTabBtns = individualTrackerSection.querySelectorAll('.audit-tab-btn');
+    const auditBadgeList = document.getElementById('audit-badge-list');
+
+    function renderAuditTab(tabKey) {
+      auditTabBtns.forEach(b => b.classList.toggle('active', b.getAttribute('data-tab') === tabKey));
+      if (!auditBadgeList) return;
+      auditBadgeList.innerHTML = '';
+
+      let list = [];
+      if (tabKey === 'event') {
+        list = stats.allBadgesAudit.filter(b => b.dateCategory === 'event' && (b.baseType === 'arcade' || b.baseType === 'skill'));
+      } else if (tabKey === 'extended') {
+        list = stats.allBadgesAudit.filter(b => b.dateCategory === 'extended' && (b.baseType === 'arcade' || b.baseType === 'skill'));
+      } else {
+        list = stats.allBadgesAudit.filter(b => b.dateCategory === 'invalid' || b.baseType === 'ignored');
+      }
+
+      if (list.length === 0) {
+        auditBadgeList.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px; font-size: 0.85rem;">Tidak ada lencana pada kategori ini.</div>`;
+        return;
+      }
+
+      list.forEach(item => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; font-size: 0.82rem;';
+
+        let typeBadge = '';
+        if (item.baseType === 'arcade') {
+          typeBadge = `<span class="live-badge-type-toggle arcade" style="font-size: 0.72rem; padding: 2px 8px; cursor: default;">🎮 Arcade</span>`;
+        } else if (item.baseType === 'skill') {
+          typeBadge = `<span class="live-badge-type-toggle skill" style="font-size: 0.72rem; padding: 2px 8px; cursor: default;">🏆 Skill</span>`;
+        } else {
+          typeBadge = `<span class="live-badge-type-toggle ignored" style="font-size: 0.72rem; padding: 2px 8px; cursor: default;">Abaikan</span>`;
+        }
+
+        row.innerHTML = `
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <div style="font-weight: 500; color: var(--text-primary);">${escapeHtml(item.title)}</div>
+            <div style="font-size: 0.74rem; color: var(--text-muted);">${escapeHtml(item.earnedText || 'Tanpa Tanggal')}</div>
+          </div>
+          <div>${typeBadge}</div>
+        `;
+        auditBadgeList.appendChild(row);
+      });
+    }
+
+    auditTabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        renderAuditTab(btn.getAttribute('data-tab'));
+      });
+    });
+
+    renderAuditTab('event');
   }
 
   // Wires Event Listeners

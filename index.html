@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://arcade-cors-proxy.schryzon.workers.dev;">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://arcade-cors-proxy.schryzon.workers.dev;">
   <title>Google Cloud Arcade Facilitator 2026 - Leaderboard Generator</title>
   <link rel="stylesheet" href="assets/style.css?v=2.2.0">
 </head>
+
 <body>
   <!-- Starfield background -->
   <div id="starfield"></div>
@@ -18,23 +21,70 @@
       <span class="facilitator-tag">LEADERBOARD GENERATOR 2026</span>
     </header>
 
-    <!-- CSV UPLOAD SECTION -->
+    <!-- APP MODE SELECTOR TABS -->
+    <div class="mode-tabs-container" id="mode-tabs-container">
+      <button type="button" class="mode-tab-btn active" id="mode-tab-facilitator" data-mode="facilitator">
+        <span class="mode-tab-icon">📋</span>
+        <span class="mode-tab-label">Mode Fasilitator (Leaderboard)</span>
+      </button>
+      <button type="button" class="mode-tab-btn" id="mode-tab-player" data-mode="player">
+        <span class="mode-tab-icon">🎯</span>
+        <span class="mode-tab-label">Mode Peserta (Progress Tracker)</span>
+      </button>
+    </div>
+
+    <!-- CSV UPLOAD SECTION (FACILITATOR MODE) -->
     <div class="upload-container" id="upload-container">
       <div class="upload-box" id="dropzone">
         <input type="file" id="csv-file-input" class="file-input" accept=".csv">
         <span class="upload-icon">🚀</span>
         <h3 class="upload-title">Unggah Data Leaderboard (.csv)</h3>
-        <p class="upload-text">Seret & lepas berkas CSV Anda di sini, atau klik tombol di bawah ini untuk memilih berkas.</p>
+        <p class="upload-text">Seret & lepas berkas CSV Anda di sini, atau klik tombol di bawah ini untuk memilih
+          berkas.</p>
         <button class="btn" id="browse-btn">PILIH BERKAS</button>
         <p class="stat-desc" style="margin-top: 15px; font-family: monospace; color: var(--text-muted);">
-          Kolom wajib: Nama Peserta, Jumlah Lencana Keahlian yang diselesaikan, Jumlah Arcade Game yang diselesaikan, Milestone yang diraih, Bonus Milestone yang diraih
+          Kolom wajib: Nama Peserta, Jumlah Lencana Keahlian yang diselesaikan, Jumlah Arcade Game yang diselesaikan,
+          Milestone yang diraih, Bonus Milestone yang diraih
         </p>
       </div>
     </div>
 
+    <!-- INDIVIDUAL PLAYER LOOKUP SECTION -->
+    <div class="player-lookup-container" id="player-lookup-container" style="display: none;">
+      <div class="upload-box player-lookup-box">
+        <span class="upload-icon">🎮</span>
+        <h3 class="upload-title">Tracker Progres Mandiri Peserta</h3>
+        <p class="upload-text">
+          Masukkan tautan profil publik Google Skills Anda untuk melacak pencapaian milestone event fasilitator (s.d. 29
+          Sep 2026) dan akumulasi poin musim Arcade (s.d. 31 Des 2026).
+        </p>
+        <div class="player-lookup-form">
+          <div class="input-group" style="max-width: 540px; margin: 0 auto 14px auto;">
+            <input type="url" id="player-url-input" class="form-control"
+              placeholder="https://www.skills.google/public_profiles/..." autocomplete="off">
+          </div>
+          <div class="bonus-checkbox-container" style="margin-bottom: 18px;">
+            <label for="player-has-bonus" class="checkbox-custom-label">
+              <input type="checkbox" id="player-has-bonus">
+              <span>Saya memiliki Bonus GEAR / Milestone Tambahan (+10 Poin)</span>
+            </label>
+          </div>
+          <button type="button" class="btn" id="check-player-btn">
+            PERIKSA PROGRES SAYA
+          </button>
+          <div id="player-lookup-status" class="lookup-status-msg" style="display: none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INDIVIDUAL PLAYER SCORECARD / PROGRESS TRACKER VIEW -->
+    <div class="individual-tracker-section" id="individual-tracker-section" style="display: none;">
+      <!-- Populated dynamically via JS -->
+    </div>
+
     <!-- LEADERBOARD SECTION (HIDDEN BY DEFAULT) -->
     <div class="leaderboard-section" id="leaderboard-section">
-      
+
       <!-- STATS DASHBOARD -->
       <div class="stats-grid">
         <div class="stat-card">
@@ -53,17 +103,20 @@
           <div class="stat-desc">Total lencana keahlian diselesaikan</div>
         </div>
         <div class="stat-card gold">
-          <div class="stat-label">Prize Tier Qualifiers</div>
+          <div class="stat-label">Tier Qualifiers</div>
           <div class="stat-value" id="stat-tier-count">0</div>
           <div class="stat-desc">Peserta dengan ≥ 50 Poin</div>
         </div>
       </div>
 
-      <!-- PRIZE TIERS SHOWCASE -->
+      <!-- TIERS SHOWCASE -->
       <div class="controls-card prize-tiers-card" style="margin-bottom: 30px;">
-        <h3 class="tracker-title" style="margin-top: 0; margin-bottom: 8px; color: var(--accent-gold); font-family: var(--font-retro); font-size: 1.1rem; letter-spacing: 1px;">Kategori Prize Tiers</h3>
-        <p class="tracker-desc" style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 20px;">
-          Kumpulkan poin dari Arcade Game dan Skill Badge untuk membuka tingkat hadiah (Prize Tier) eksklusif di bawah ini.
+        <h3 class="tracker-title"
+          style="margin-top: 0; margin-bottom: 8px; color: var(--accent-gold); font-family: var(--font-retro); font-size: 1.1rem; letter-spacing: 1px;">
+          Kategori Tier</h3>
+        <p class="tracker-desc"
+          style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 20px;">
+          Kumpulkan poin dari Arcade Game dan Skill Badge untuk membuka tingkat hadiah (Tier) eksklusif di bawah ini.
         </p>
         <div class="prize-tiers-grid">
           <!-- Tier 1: Trooper -->
@@ -72,18 +125,19 @@
             <div class="prize-tier-title">Trooper</div>
             <div class="prize-tier-divider">· · · ──── · · ·</div>
             <div class="prize-tier-icon">
-              <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated;">
-                <rect x="13" y="4" width="6" height="6" fill="#eb4d4b"/>
-                <rect x="14" y="3" width="4" height="8" fill="#eb4d4b"/>
-                <rect x="14" y="4" width="2" height="2" fill="#ff7675"/>
-                <rect x="13" y="5" width="1" height="1" fill="#fff"/>
-                <rect x="15" y="10" width="2" height="6" fill="#b2bec3"/>
-                <rect x="14" y="15" width="4" height="2" fill="#636e72"/>
-                <rect x="9" y="17" width="14" height="9" rx="1" fill="#dfe6e9"/>
-                <rect x="10" y="18" width="12" height="7" fill="#b2bec3"/>
-                <rect x="11" y="20" width="2" height="2" fill="#00b894"/>
-                <rect x="19" y="20" width="2" height="2" fill="#d63031"/>
-                <rect x="9" y="25" width="14" height="1" fill="#636e72"/>
+              <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"
+                style="image-rendering: pixelated;">
+                <rect x="13" y="4" width="6" height="6" fill="#eb4d4b" />
+                <rect x="14" y="3" width="4" height="8" fill="#eb4d4b" />
+                <rect x="14" y="4" width="2" height="2" fill="#ff7675" />
+                <rect x="13" y="5" width="1" height="1" fill="#fff" />
+                <rect x="15" y="10" width="2" height="6" fill="#b2bec3" />
+                <rect x="14" y="15" width="4" height="2" fill="#636e72" />
+                <rect x="9" y="17" width="14" height="9" rx="1" fill="#dfe6e9" />
+                <rect x="10" y="18" width="12" height="7" fill="#b2bec3" />
+                <rect x="11" y="20" width="2" height="2" fill="#00b894" />
+                <rect x="19" y="20" width="2" height="2" fill="#d63031" />
+                <rect x="9" y="25" width="14" height="1" fill="#636e72" />
               </svg>
             </div>
             <div class="prize-tier-points">50 Points</div>
@@ -94,17 +148,18 @@
             <div class="prize-tier-title">Ranger</div>
             <div class="prize-tier-divider">· · · ──── · · ·</div>
             <div class="prize-tier-icon">
-              <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated;">
-                <rect x="13" y="4" width="6" height="6" fill="#eb4d4b"/>
-                <rect x="14" y="3" width="4" height="8" fill="#eb4d4b"/>
-                <rect x="14" y="4" width="2" height="2" fill="#ff7675"/>
-                <rect x="13" y="5" width="1" height="1" fill="#fff"/>
-                <rect x="15" y="10" width="2" height="6" fill="#b2bec3"/>
-                <rect x="14" y="15" width="4" height="2" fill="#2d3436"/>
-                <rect x="8" y="16" width="16" height="11" rx="2" fill="#2979ff"/>
-                <rect x="9" y="17" width="14" height="9" fill="#4b6584"/>
-                <rect x="11" y="20" width="2" height="2" fill="#00b894"/>
-                <rect x="19" y="20" width="2" height="2" fill="#d63031"/>
+              <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"
+                style="image-rendering: pixelated;">
+                <rect x="13" y="4" width="6" height="6" fill="#eb4d4b" />
+                <rect x="14" y="3" width="4" height="8" fill="#eb4d4b" />
+                <rect x="14" y="4" width="2" height="2" fill="#ff7675" />
+                <rect x="13" y="5" width="1" height="1" fill="#fff" />
+                <rect x="15" y="10" width="2" height="6" fill="#b2bec3" />
+                <rect x="14" y="15" width="4" height="2" fill="#2d3436" />
+                <rect x="8" y="16" width="16" height="11" rx="2" fill="#2979ff" />
+                <rect x="9" y="17" width="14" height="9" fill="#4b6584" />
+                <rect x="11" y="20" width="2" height="2" fill="#00b894" />
+                <rect x="19" y="20" width="2" height="2" fill="#d63031" />
               </svg>
             </div>
             <div class="prize-tier-points">75 Points</div>
@@ -115,19 +170,20 @@
             <div class="prize-tier-title">Champion</div>
             <div class="prize-tier-divider">· · · ──── · · ·</div>
             <div class="prize-tier-icon">
-              <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated;">
-                <rect x="11" y="2" width="10" height="10" rx="1" fill="#00f2fe" opacity="0.4"/>
-                <rect x="7" y="15" width="18" height="13" rx="2" fill="#00f2fe" opacity="0.4"/>
-                <rect x="13" y="4" width="6" height="6" fill="#eb4d4b"/>
-                <rect x="14" y="3" width="4" height="8" fill="#eb4d4b"/>
-                <rect x="14" y="4" width="2" height="2" fill="#ff7675"/>
-                <rect x="13" y="5" width="1" height="1" fill="#fff"/>
-                <rect x="15" y="10" width="2" height="6" fill="#dfe6e9"/>
-                <rect x="14" y="15" width="4" height="2" fill="#2d3436"/>
-                <rect x="8" y="16" width="16" height="11" rx="2" fill="#00d2d3"/>
-                <rect x="9" y="17" width="14" height="9" fill="#2d3436"/>
-                <rect x="11" y="20" width="2" height="2" fill="#00b894"/>
-                <rect x="19" y="20" width="2" height="2" fill="#d63031"/>
+              <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"
+                style="image-rendering: pixelated;">
+                <rect x="11" y="2" width="10" height="10" rx="1" fill="#00f2fe" opacity="0.4" />
+                <rect x="7" y="15" width="18" height="13" rx="2" fill="#00f2fe" opacity="0.4" />
+                <rect x="13" y="4" width="6" height="6" fill="#eb4d4b" />
+                <rect x="14" y="3" width="4" height="8" fill="#eb4d4b" />
+                <rect x="14" y="4" width="2" height="2" fill="#ff7675" />
+                <rect x="13" y="5" width="1" height="1" fill="#fff" />
+                <rect x="15" y="10" width="2" height="6" fill="#dfe6e9" />
+                <rect x="14" y="15" width="4" height="2" fill="#2d3436" />
+                <rect x="8" y="16" width="16" height="11" rx="2" fill="#00d2d3" />
+                <rect x="9" y="17" width="14" height="9" fill="#2d3436" />
+                <rect x="11" y="20" width="2" height="2" fill="#00b894" />
+                <rect x="19" y="20" width="2" height="2" fill="#d63031" />
               </svg>
             </div>
             <div class="prize-tier-points">95 Points</div>
@@ -138,25 +194,26 @@
             <div class="prize-tier-title">Legend</div>
             <div class="prize-tier-divider">· · · ──── · · ·</div>
             <div class="prize-tier-icon">
-              <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated;">
-                <rect x="5" y="5" width="2" height="2" fill="#fbc531"/>
-                <rect x="25" y="5" width="2" height="2" fill="#fbc531"/>
-                <rect x="4" y="16" width="2" height="2" fill="#fbc531"/>
-                <rect x="26" y="16" width="2" height="2" fill="#fbc531"/>
-                <rect x="7" y="11" width="1" height="1" fill="#ffeaa7"/>
-                <rect x="24" y="11" width="1" height="1" fill="#ffeaa7"/>
-                <rect x="11" y="2" width="10" height="10" rx="1" fill="#2979ff" opacity="0.6"/>
-                <rect x="7" y="15" width="18" height="13" rx="2" fill="#2979ff" opacity="0.6"/>
-                <rect x="13" y="4" width="6" height="6" fill="#eb4d4b"/>
-                <rect x="14" y="3" width="4" height="8" fill="#eb4d4b"/>
-                <rect x="14" y="4" width="2" height="2" fill="#ff7675"/>
-                <rect x="13" y="5" width="1" height="1" fill="#fff"/>
-                <rect x="15" y="10" width="2" height="6" fill="#dfe6e9"/>
-                <rect x="14" y="15" width="4" height="2" fill="#2d3436"/>
-                <rect x="8" y="16" width="16" height="11" rx="2" fill="#2979ff"/>
-                <rect x="9" y="17" width="14" height="9" fill="#1e272e"/>
-                <rect x="11" y="20" width="2" height="2" fill="#00b894"/>
-                <rect x="19" y="20" width="2" height="2" fill="#d63031"/>
+              <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"
+                style="image-rendering: pixelated;">
+                <rect x="5" y="5" width="2" height="2" fill="#fbc531" />
+                <rect x="25" y="5" width="2" height="2" fill="#fbc531" />
+                <rect x="4" y="16" width="2" height="2" fill="#fbc531" />
+                <rect x="26" y="16" width="2" height="2" fill="#fbc531" />
+                <rect x="7" y="11" width="1" height="1" fill="#ffeaa7" />
+                <rect x="24" y="11" width="1" height="1" fill="#ffeaa7" />
+                <rect x="11" y="2" width="10" height="10" rx="1" fill="#2979ff" opacity="0.6" />
+                <rect x="7" y="15" width="18" height="13" rx="2" fill="#2979ff" opacity="0.6" />
+                <rect x="13" y="4" width="6" height="6" fill="#eb4d4b" />
+                <rect x="14" y="3" width="4" height="8" fill="#eb4d4b" />
+                <rect x="14" y="4" width="2" height="2" fill="#ff7675" />
+                <rect x="13" y="5" width="1" height="1" fill="#fff" />
+                <rect x="15" y="10" width="2" height="6" fill="#dfe6e9" />
+                <rect x="14" y="15" width="4" height="2" fill="#2d3436" />
+                <rect x="8" y="16" width="16" height="11" rx="2" fill="#2979ff" />
+                <rect x="9" y="17" width="14" height="9" fill="#1e272e" />
+                <rect x="11" y="20" width="2" height="2" fill="#00b894" />
+                <rect x="19" y="20" width="2" height="2" fill="#d63031" />
               </svg>
             </div>
             <div class="prize-tier-points">120 Points</div>
@@ -166,59 +223,75 @@
 
       <!-- MILESTONE TRACKER -->
       <div class="controls-card tracker-card" style="margin-bottom: 30px;">
-        <h3 class="tracker-title" style="margin-top: 0; margin-bottom: 10px; color: var(--accent-cyan); font-family: var(--font-retro); font-size: 1.1rem; letter-spacing: 1px;">Tracker Pencapaian Milestone Program</h3>
-        <p class="tracker-desc" style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 20px;">
-          Lihat progres untuk 4 milestonemu di bawah ini. Ingat, semakin cepat peserta menyelesaikan alur belajar mereka, semakin cepat milestone akan tercapai dan hadiah untuk milestone tersebut akan terbuka.
+        <h3 class="tracker-title"
+          style="margin-top: 0; margin-bottom: 10px; color: var(--accent-cyan); font-family: var(--font-retro); font-size: 1.1rem; letter-spacing: 1px;">
+          Tracker Pencapaian Milestone Program</h3>
+        <p class="tracker-desc"
+          style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 20px;">
+          Lihat progres untuk 4 milestonemu di bawah ini. Ingat, semakin cepat peserta menyelesaikan alur belajar
+          mereka, semakin cepat milestone akan tercapai dan hadiah untuk milestone tersebut akan terbuka.
         </p>
         <div class="tracker-grid" style="display: flex; flex-direction: column; gap: 18px;">
           <!-- Milestone #1 -->
           <div class="tracker-item">
-            <div class="tracker-item-header" style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; font-weight: 600; color: var(--text-primary);">
-              <span>Milestone #1 - Mendorong penyelesaian 100 arcade game & 300 penyelesaian skill badge dalam program. ⌛</span>
+            <div class="tracker-item-header"
+              style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; font-weight: 600; color: var(--text-primary);">
+              <span>Milestone #1 - Mendorong penyelesaian 100 arcade game & 300 penyelesaian skill badge dalam program.
+                ⌛</span>
             </div>
             <div class="progress-container milestone-pc-1" style="margin-bottom: 5px; height: 16px;">
               <div class="progress-bar milestone-pb-1" id="milestone-progress-bar-1" style="width: 0%;"></div>
             </div>
-            <div class="progress-labels" style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); font-family: var(--font-stats);">
+            <div class="progress-labels"
+              style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); font-family: var(--font-stats);">
               <span id="milestone-progress-percent-1">0% Completed</span>
               <span id="milestone-progress-ratio-1">0/400</span>
             </div>
           </div>
           <!-- Milestone #2 -->
           <div class="tracker-item">
-            <div class="tracker-item-header" style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; font-weight: 600; color: var(--text-primary);">
-              <span>Milestone #2 - Mendorong penyelesaian 200 arcade game & 500 penyelesaian skill badge dalam program. ⌛</span>
+            <div class="tracker-item-header"
+              style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; font-weight: 600; color: var(--text-primary);">
+              <span>Milestone #2 - Mendorong penyelesaian 200 arcade game & 500 penyelesaian skill badge dalam program.
+                ⌛</span>
             </div>
             <div class="progress-container milestone-pc-2" style="margin-bottom: 5px; height: 16px;">
               <div class="progress-bar milestone-pb-2" id="milestone-progress-bar-2" style="width: 0%;"></div>
             </div>
-            <div class="progress-labels" style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); font-family: var(--font-stats);">
+            <div class="progress-labels"
+              style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); font-family: var(--font-stats);">
               <span id="milestone-progress-percent-2">0% Completed</span>
               <span id="milestone-progress-ratio-2">0/700</span>
             </div>
           </div>
           <!-- Milestone #3 -->
           <div class="tracker-item">
-            <div class="tracker-item-header" style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; font-weight: 600; color: var(--text-primary);">
-              <span>Milestone #3 - Mendorong penyelesaian 300 arcade game & 750 penyelesaian skill badge dalam program. ⌛</span>
+            <div class="tracker-item-header"
+              style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; font-weight: 600; color: var(--text-primary);">
+              <span>Milestone #3 - Mendorong penyelesaian 300 arcade game & 750 penyelesaian skill badge dalam program.
+                ⌛</span>
             </div>
             <div class="progress-container milestone-pc-3" style="margin-bottom: 5px; height: 16px;">
               <div class="progress-bar milestone-pb-3" id="milestone-progress-bar-3" style="width: 0%;"></div>
             </div>
-            <div class="progress-labels" style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); font-family: var(--font-stats);">
+            <div class="progress-labels"
+              style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); font-family: var(--font-stats);">
               <span id="milestone-progress-percent-3">0% Completed</span>
               <span id="milestone-progress-ratio-3">0/1050</span>
             </div>
           </div>
           <!-- Milestone #4 -->
           <div class="tracker-item">
-            <div class="tracker-item-header" style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; font-weight: 600; color: var(--text-primary);">
-              <span>Milestone #4 - Mendorong penyelesaian 400 arcade game & 1000 penyelesaian skill badge dalam program. ⌛</span>
+            <div class="tracker-item-header"
+              style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; font-weight: 600; color: var(--text-primary);">
+              <span>Milestone #4 - Mendorong penyelesaian 400 arcade game & 1000 penyelesaian skill badge dalam program.
+                ⌛</span>
             </div>
             <div class="progress-container milestone-pc-4" style="margin-bottom: 5px; height: 16px;">
               <div class="progress-bar milestone-pb-4" id="milestone-progress-bar-4" style="width: 0%;"></div>
             </div>
-            <div class="progress-labels" style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); font-family: var(--font-stats);">
+            <div class="progress-labels"
+              style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); font-family: var(--font-stats);">
               <span id="milestone-progress-percent-4">0% Completed</span>
               <span id="milestone-progress-ratio-4">0/1400</span>
             </div>
@@ -245,9 +318,9 @@
             </select>
           </div>
           <div class="input-group">
-            <span class="input-label">Filter Prize Tier</span>
+            <span class="input-label">Filter Tier</span>
             <select id="tier-filter" class="form-control">
-              <option value="all">Semua Prize Tier</option>
+              <option value="all">Semua Tier</option>
               <option value="legend">Legend (120+ Pts)</option>
               <option value="champion">Champion (95+ Pts)</option>
               <option value="ranger">Ranger (75+ Pts)</option>
@@ -272,20 +345,27 @@
       <div class="leaderboard-header-actions">
         <div>
           <h2 class="section-title">Papan Peringkat Peserta</h2>
-          <div id="last-updated-time" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px; font-family: var(--font-stats); display: none;"></div>
+          <div id="last-updated-time"
+            style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px; font-family: var(--font-stats); display: none;">
+          </div>
           <!-- Sync Progress Bar -->
-          <div id="sync-progress-container" style="display: none; margin-top: 8px; font-size: 0.75rem; color: var(--accent-cyan); font-family: var(--font-stats);">
+          <div id="sync-progress-container"
+            style="display: none; margin-top: 8px; font-size: 0.75rem; color: var(--accent-cyan); font-family: var(--font-stats);">
             <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
               <span id="sync-progress-text">Mensinkronisasi profil...</span>
               <span id="sync-progress-percent">0%</span>
             </div>
-            <div style="width: 200px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
-              <div id="sync-progress-bar" style="width: 0%; height: 100%; background: var(--accent-cyan); transition: width 0.2s ease;"></div>
+            <div
+              style="width: 200px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
+              <div id="sync-progress-bar"
+                style="width: 0%; height: 100%; background: var(--accent-cyan); transition: width 0.2s ease;"></div>
             </div>
           </div>
         </div>
         <div class="export-buttons">
-          <button class="btn btn-primary" id="sync-live-btn" style="background: linear-gradient(135deg, var(--accent-cyan), #3867d6); color: white; border: 1px solid var(--accent-cyan);">Sync Live</button>
+          <button class="btn btn-primary" id="sync-live-btn"
+            style="background: linear-gradient(135deg, var(--accent-cyan), #3867d6); color: white; border: 1px solid var(--accent-cyan);">Sync
+            Live</button>
           <button class="btn btn-secondary" id="reset-data-btn">Reset Data</button>
           <button class="btn btn-accent" id="export-long-btn">Ekspor Gambar Panjang</button>
           <button class="btn" id="export-pdf-btn">Ekspor PDF (16:9)</button>
@@ -304,7 +384,7 @@
               <th>Milestone</th>
               <th style="width: 150px; text-align: center;">Game</th>
               <th style="width: 150px; text-align: center;">Skill</th>
-              <th>Prize Tier</th>
+              <th>Tier</th>
               <th style="width: 100px;">Profil</th>
             </tr>
           </thead>
@@ -321,8 +401,10 @@
     </div>
 
     <!-- WATERMARK FOOTER -->
-    <footer style="text-align: center; margin-top: 40px; padding: 20px 0; border-top: 1px solid rgba(255, 255, 255, 0.05); font-family: var(--font-stats); font-size: 0.8rem; color: var(--text-muted);">
-      Created with 💙 by <span style="color: var(--accent-cyan); text-shadow: 0 0 8px var(--accent-cyan-glow); font-weight: bold;">Schryzon</span>
+    <footer
+      style="text-align: center; margin-top: 40px; padding: 20px 0; border-top: 1px solid rgba(255, 255, 255, 0.05); font-family: var(--font-stats); font-size: 0.8rem; color: var(--text-muted);">
+      Created with 💙 by <span
+        style="color: var(--accent-cyan); text-shadow: 0 0 8px var(--accent-cyan-glow); font-weight: bold;">Schryzon</span>
     </footer>
   </div>
 
@@ -335,7 +417,7 @@
         <div class="modal-subtitle" id="modal-participant-points">Total Poin: 0</div>
       </div>
       <div class="modal-body">
-        
+
         <!-- Milestone Progress Section -->
         <div class="modal-section">
           <h3 class="modal-section-title">Status Milestone & Target</h3>
@@ -343,7 +425,7 @@
             <span class="milestone-badge" id="modal-milestone-badge">None</span>
             <span class="tier-badge" id="modal-tier-badge" style="display: none;"></span>
           </div>
-          
+
           <div class="progress-wrapper" style="margin-bottom: 12px;">
             <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px;">
               <span>Game Arcade</span>
@@ -360,10 +442,12 @@
               <span id="modal-skill-progress-text">0 / 18 Badge</span>
             </div>
             <div class="progress-container">
-              <div class="progress-bar" id="modal-skill-progress-bar" style="background: linear-gradient(90deg, var(--accent-pink), var(--accent-green));"></div>
+              <div class="progress-bar" id="modal-skill-progress-bar"
+                style="background: linear-gradient(90deg, var(--accent-pink), var(--accent-green));"></div>
             </div>
           </div>
-          <p class="stat-desc" id="modal-next-milestone-hint" style="margin-top: 8px;">Butuh 5 games & 12 skills untuk mencapai Milestone 1.</p>
+          <p class="stat-desc" id="modal-next-milestone-hint" style="margin-top: 8px;">Butuh 5 games & 12 skills untuk
+            mencapai Milestone 1.</p>
         </div>
 
         <!-- Badges Details -->
@@ -399,13 +483,18 @@
         <div class="modal-section" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
           <h3 class="modal-section-title" style="color: var(--accent-cyan);">
             <span>Sinkronisasi Profil Live</span>
-            <button class="btn btn-secondary" id="modal-verify-live-btn" style="font-size: 0.75rem; padding: 4px 10px;">Sinkronisasi Sekarang</button>
+            <button class="btn btn-secondary" id="modal-verify-live-btn"
+              style="font-size: 0.75rem; padding: 4px 10px;">Sinkronisasi Sekarang</button>
           </h3>
-          <div id="modal-live-verify-container" style="display: none; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 6px; margin-top: 10px;">
+          <div id="modal-live-verify-container"
+            style="display: none; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 6px; margin-top: 10px;">
             <div id="modal-live-verify-summary" style="font-size: 0.85rem; margin-bottom: 10px;"></div>
-            <div id="modal-live-badge-list" style="margin-top: 10px; max-height: 200px; overflow-y: auto; padding-right: 5px; display: flex; flex-direction: column; gap: 8px;"></div>
+            <div id="modal-live-badge-list"
+              style="margin-top: 10px; max-height: 200px; overflow-y: auto; padding-right: 5px; display: flex; flex-direction: column; gap: 8px;">
+            </div>
             <div id="modal-live-sync-action" style="margin-top: 15px; text-align: right; display: none;">
-              <button class="btn btn-accent" id="modal-apply-live-btn" style="font-size: 0.75rem; padding: 5px 12px;">Terapkan Data Live</button>
+              <button class="btn btn-accent" id="modal-apply-live-btn"
+                style="font-size: 0.75rem; padding: 5px 12px;">Terapkan Data Live</button>
             </div>
           </div>
         </div>
@@ -435,4 +524,5 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="assets/app.js?v=2.2.0"></script>
 </body>
+
 </html>

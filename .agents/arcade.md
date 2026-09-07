@@ -38,6 +38,19 @@ Participants progress through 4 milestone levels based on the completed badge co
 * **Milestone 3**: 10 Arcade Games AND 42 Skill Badges
 * **Ultimate Milestone**: 12 Arcade Games AND 56 Skill Badges
 
+### 3. Facilitator Milestone Targets
+The program-wide tracker gauges progress across 4 facilitator milestones. Each milestone requires meeting BOTH arcade game and skill badge quotas (AND logic, not unconstrained sum):
+* **Milestone 1**: 100 Arcade Games AND 300 Skill Badges (Target: 400 Total)
+* **Milestone 2**: 200 Arcade Games AND 500 Skill Badges (Target: 700 Total)
+* **Milestone 3**: 300 Arcade Games AND 750 Skill Badges (Target: 1050 Total)
+* **Milestone 4**: 400 Arcade Games AND 1000 Skill Badges (Target: 1400 Total)
+
+Progression rules:
+* Clamping rule: `effective_games = min(total_games, target_games)` and `effective_skills = min(total_skills, target_skills)`.
+* Effective total: `effective_total = effective_games + effective_skills`.
+* Completion percentage: `percent = min(100, floor((effective_total / target_total) * 100))`.
+* Quota independence: Excess skill badges beyond the quota of a specific milestone do not contribute to that milestone's completion; the remaining progress requires fulfilling the game quota.
+
 ## Visual Theme & Layout
 
 * **Aesthetic**: Retro space-arcade theme. Use deep space dark blue/navy backgrounds, twinkling animations, glassmorphic panels, and neon glowing borders (gold, cyan, pink, and green).
@@ -56,12 +69,19 @@ Participants progress through 4 milestone levels based on the completed badge co
 * **Sync Cache**: Profile stats are cached under `arcade_profile_cache` keyed by the participant's `skillsUrl`. On load, the CSV parser merges records with this cache for O(1) startup times.
 * **Custom Classifications**: Manual categorization overrides are stored in `arcade_custom_badge_classifications` (`{ badgeTitle: "arcade" | "skill" | "ignored" }`).
 
-### 3. Classification Engine
-* **Arcade Games**: The badge's dialog link `href` contains `/games/`.
-* **Skill Badges**: The badge's dialog description contains `"skill badge"` (case-insensitive).
+### 3. Dual-Period Classification Engine
+* **Event Cutoff Window**: 13 July 2026, 10:00:00 GMT+7 to 29 September 2026, 23:59:59 GMT+7. Used for calculating player milestone bonus points (Milestone 1/2/3/Ultimate) and Facilitator Milestone cumulative progress bars.
+* **Extended Season Window**: 30 September 2026, 00:00:00 GMT+7 to 31 December 2026, 23:59:59 GMT+7. Badges in this window award direct points and advance participants towards Tiers (★ Trooper, ★★ Ranger, ★★★ Champion, ★★★★ Legend), but do not affect Facilitator milestone bars or participant milestone bonus tiers.
+* **Arcade Games**: The badge's dialog link href contains `/games/`.
+* **Skill Badges**: The badge's dialog description contains `"skill badge"`, `"badge keahlian"`, or `"lencana keahlian"` (case-insensitive).
 * **Completion Badges**: Ignored.
 * **Overrides**: Any entries in `arcade_custom_badge_classifications` immediately bypass default rules.
 
 ### 4. Discrepancy Tracking (Diffs)
 * Points and badge count differences between live data and the CSV record are calculated and displayed using inline green indicators (e.g., `+2 Live`) next to scores in lists.
+
+## Dual-Mode Architecture
+
+* **Facilitator Mode**: Full leaderboard view, CSV drag-and-drop ingestion, facilitator milestone dual-quota progress bars (evaluated at 29 September cutoff), live profile batch synchronization, and slide/poster exports.
+* **Participant Mode**: Dedicated Personal Progress Tracker for individual participants via Google Skills URL. Renders a clear 3-card breakdown (Event Milestone locked to 29 September, Extended Season progress for 30 September - 31 December, and Accumulated Score & Prize Tier) along with full badge audit tabs, eliminating leaderboard confusion.
 

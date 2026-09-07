@@ -617,7 +617,7 @@ select.form-control option {
   to { box-shadow: 0 0 12px rgba(251, 197, 49, 0.5); }
 }
 
-/* Prize Tier Badges */
+/* Tier Badges */
 .tier-badge {
   display: inline-flex;
   align-items: center;
@@ -667,7 +667,7 @@ select.form-control option {
   animation: pulseGold 2s infinite alternate;
 }
 
-/* Prize Tiers Showcase Grid */
+/* Tiers Showcase Grid */
 .prize-tiers-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1405,5 +1405,305 @@ select.form-control option {
   color: #ff4b4b;
   border: 1px solid rgba(255, 75, 75, 0.25);
 }
+
+/* --- Mode Switcher Tabs --- */
+.mode-tabs-container {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.mode-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(11, 15, 25, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-family: var(--font-stats);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.mode-tab-btn:hover {
+  border-color: rgba(0, 243, 255, 0.5);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.mode-tab-btn.active {
+  background: rgba(0, 243, 255, 0.12);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  box-shadow: 0 0 14px rgba(0, 243, 255, 0.25);
+}
+
+/* --- Player Lookup Box --- */
+.player-lookup-box {
+  max-width: 680px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 34px 24px;
+}
+
+.checkbox-custom-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.checkbox-custom-label input[type="checkbox"] {
+  accent-color: var(--accent-cyan);
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.lookup-status-msg {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-family: var(--font-body);
+}
+
+.lookup-status-msg.loading {
+  background: rgba(0, 243, 255, 0.08);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(0, 243, 255, 0.25);
+}
+
+.lookup-status-msg.error {
+  background: rgba(255, 75, 75, 0.1);
+  color: #ff4b4b;
+  border: 1px solid rgba(255, 75, 75, 0.3);
+}
+
+/* --- Dedicated Personal Progress Tracker View --- */
+.individual-tracker-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 35px;
+}
+
+.player-tracker-hero {
+  background: var(--bg-card);
+  border: 1px solid rgba(0, 243, 255, 0.3);
+  border-radius: 12px;
+  padding: 22px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.player-hero-profile {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.player-avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-cyan);
+  box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+  object-fit: cover;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.player-avatar-placeholder {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-cyan);
+  background: rgba(0, 243, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+}
+
+.player-hero-name {
+  font-family: var(--font-stats);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.player-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.player-hero-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.player-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.player-card {
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.player-card.event-card {
+  border-color: rgba(255, 184, 0, 0.35);
+  box-shadow: 0 4px 16px rgba(255, 184, 0, 0.08);
+}
+
+.player-card.extended-card {
+  border-color: rgba(0, 243, 255, 0.35);
+  box-shadow: 0 4px 16px rgba(0, 243, 255, 0.08);
+}
+
+.player-card.points-card {
+  border-color: rgba(0, 255, 157, 0.35);
+  box-shadow: 0 4px 16px rgba(0, 255, 157, 0.08);
+}
+
+.player-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.player-card-title {
+  font-family: var(--font-retro);
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+}
+
+.pill-tag {
+  font-size: 0.68rem;
+  font-family: var(--font-stats);
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pill-tag.locked {
+  background: rgba(255, 184, 0, 0.15);
+  color: var(--accent-gold);
+  border: 1px solid rgba(255, 184, 0, 0.4);
+}
+
+.pill-tag.active-season {
+  background: rgba(0, 243, 255, 0.15);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(0, 243, 255, 0.4);
+}
+
+.pill-tag.total {
+  background: rgba(0, 255, 157, 0.15);
+  color: var(--accent-green);
+  border: 1px solid rgba(0, 255, 157, 0.4);
+}
+
+.player-stat-big {
+  font-family: var(--font-stats);
+  font-size: 2.2rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.badge-tag-event {
+  background: rgba(255, 184, 0, 0.12);
+  color: var(--accent-gold);
+  border: 1px solid rgba(255, 184, 0, 0.3);
+  font-size: 0.68rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-stats);
+}
+
+.badge-tag-extended {
+  background: rgba(0, 243, 255, 0.12);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(0, 243, 255, 0.3);
+  font-size: 0.68rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-stats);
+}
+
+.badge-audit-container {
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 22px;
+}
+
+.badge-audit-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.audit-tab-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  padding: 7px 16px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-family: var(--font-stats);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.audit-tab-btn:hover {
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.audit-tab-btn.active {
+  background: rgba(0, 243, 255, 0.12);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
 
 
