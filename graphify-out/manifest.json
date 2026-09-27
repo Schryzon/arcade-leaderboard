@@ -1,0 +1,56 @@
+{
+  "assets/app.js": {
+    "mtime": 1790494850.6528442,
+    "seen": 1790494941.6826215,
+    "ast_hash": "1922bcedbbf463283806d3e1db3c5479",
+    "semantic_hash": ""
+  },
+  "worker/package.json": {
+    "mtime": 1787920407.1129096,
+    "seen": 1790494735.607807,
+    "ast_hash": "5401004f007949ac1b5b578acfe714bf",
+    "semantic_hash": "5401004f007949ac1b5b578acfe714bf"
+  },
+  "worker/src/index.js": {
+    "mtime": 1787920980.6306584,
+    "seen": 1790494735.607807,
+    "ast_hash": "503f21c9a75f4b69c99dfd88d6951f4d",
+    "semantic_hash": "503f21c9a75f4b69c99dfd88d6951f4d"
+  },
+  ".agents/arcade.md": {
+    "mtime": 1790494913.9987302,
+    "seen": 1790494941.6826215,
+    "ast_hash": "261e1f4c69eada4232424eb14e95d447",
+    "semantic_hash": ""
+  },
+  ".agents/rules/graphify.md": {
+    "mtime": 1790494707.7340603,
+    "seen": 1790494941.6826215,
+    "ast_hash": "a0e4d192b9e2e17256124dbfc8e24e6a",
+    "semantic_hash": ""
+  },
+  ".agents/workflows/graphify.md": {
+    "mtime": 1790494707.7355695,
+    "seen": 1790494941.6826215,
+    "ast_hash": "a831cf3669f1e6ab85d8a80ebe655f99",
+    "semantic_hash": ""
+  },
+  "AGENTS.md": {
+    "mtime": 1790494887.339176,
+    "seen": 1790494941.6826215,
+    "ast_hash": "6c3912ff179c8a43cbf753c72ccb4288",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1790494925.263863,
+    "seen": 1790494941.6826215,
+    "ast_hash": "5a22875959f131addc33dc544080ec5f",
+    "semantic_hash": ""
+  },
+  "index.html": {
+    "mtime": 1790494871.3936982,
+    "seen": 1790494941.6826215,
+    "ast_hash": "ce3937b1572df25b887f52fc3f6c904d",
+    "semantic_hash": ""
+  }
+}

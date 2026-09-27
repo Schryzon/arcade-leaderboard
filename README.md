@@ -25,19 +25,19 @@ The application is deployed and accessible at:
 * **Zero-Leak Privacy**: The page loads completely empty. All CSV files are parsed locally in-memory on your machine.
 * **Dual-Mode System**:
   * **Facilitator Mode**: Comprehensive cohort leaderboard, facilitator milestone dual-quota progress tracking, batch synchronization, and marketing export generation.
-  * **Participant Mode (Personal Progress Tracker)**: Dedicated tracking view for individual learners via their Google Skills public profile URL. Displays official event milestone status, extended season progress, accumulated points, tier, and full badge audits without leaderboard confusion.
+  * **Participant Mode (Personal Progress Tracker)**: Dedicated tracking view for individual learners via their Google Skills public profile URL or shareable deep link (`?url=...`). Displays live event milestone progress, remaining time countdown, extended season progress, accumulated points, tier, and full badge audits without leaderboard confusion.
 * **Point System Calculation**:
   * **Arcade Game Badge** = `1 Point`
   * **Skill Badge** = `0.5 Points` (Every 2 badges = `1 Point`, rounded down using `Math.floor`)
-  * **Participant Milestone Bonus** = Dynamic bonus points based on the highest achieved milestone (non-cumulative, locked to 29 September cutoff):
+  * **Participant Milestone Bonus** = Dynamic bonus points based on the highest achieved milestone (non-cumulative, locked to 29 September 10:30 WIB cutoff):
     * **Milestone 1**: `+7 Points`
     * **Milestone 2**: `+18 Points`
     * **Milestone 3**: `+29 Points`
     * **Ultimate Milestone**: `+40 Points`
   * **Total Points** = `ArcadeGames + floor(SkillBadges / 2) + MilestoneBonus + (BonusMilestone ? 10 : 0)`
 * **Dual-Period Evaluation Windows**:
-  * **Event Cutoff Window (13 July - 29 September 2026)**: Badges earned in this window determine both Participant Milestone level and Facilitator Milestone progress bars.
-  * **Extended Global Arcade Season (30 September - 31 December 2026)**: Additional badges award direct points and advance participants towards Tiers, while event milestone bonuses and facilitator milestone quotas remain locked to the cutoff.
+  * **Event Cutoff Window (13 July - 29 September 2026, 10:30 WIB)**: Badges earned in this window determine both Participant Milestone level and Facilitator Milestone progress bars.
+  * **Extended Global Arcade Season (29 September 10:30 WIB - 31 December 2026)**: Additional badges award direct points and advance participants towards Tiers, while event milestone bonuses and facilitator milestone quotas remain locked to the 10:30 WIB cutoff.
 * **Participant Milestone Tracking**:
   * **Milestone 1**: 6 Arcade Games AND 14 Skill Badges
   * **Milestone 2**: 8 Arcade Games AND 28 Skill Badges
@@ -54,7 +54,7 @@ The application is deployed and accessible at:
   * **Milestone #2**: 200 Arcade Games AND 500 Skill Badges (Target: 700 Total)
   * **Milestone #3**: 300 Arcade Games AND 750 Skill Badges (Target: 1050 Total)
   * **Milestone #4**: 400 Arcade Games AND 1000 Skill Badges (Target: 1400 Total)
-  * Tracks group-wide cumulative progress gauges requiring both quotas to be met simultaneously (excess skill badges cannot compensate for incomplete games). Evaluated strictly at the 29 September cutoff.
+  * Tracks group-wide cumulative progress gauges requiring both quotas to be met simultaneously (excess skill badges cannot compensate for incomplete games). Evaluated strictly at the 29 September 10:30 WIB cutoff.
 * **Responsive Visuals**: Adaptable design optimized for both desktop monitors (detailed table views) and mobile screens (compact click-to-expand scorecard cards).
 * **Advanced Shareable Exports**:
   * **Export ZIP (16:9)**: Bundles landscape slide cards (containing up to 10 participants per page) into a single ZIP of images.

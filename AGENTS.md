@@ -123,10 +123,10 @@ Assume `total_games = 50` and `total_skills = 308`:
 
 ### 1. Validity Date Windows
 The platform evaluates badge timestamps across two distinct program windows:
-* Event Cutoff Window: `13 July 2026, 10:00:00 GMT+7` to `29 September 2026, 23:59:59 GMT+7`.
+* Event Cutoff Window: `13 July 2026, 10:00:00 GMT+7` to `29 September 2026, 10:30:00 GMT+7` (WIB).
   * Evaluates Participant Milestone achievements (Milestone 1, 2, 3, Ultimate Milestone).
   * Evaluates Program-Wide Facilitator Milestone progress bars (100 & 300, 200 & 500, etc.).
-* Extended Global Arcade Season: `30 September 2026, 00:00:00 GMT+7` to `31 December 2026, 23:59:59 GMT+7`.
+* Extended Global Arcade Season: `29 September 2026, 10:30:01 GMT+7` to `31 December 2026, 23:59:59 GMT+7`.
   * Badges earned during this extended period award direct points (1 point per game, 0.5 points per skill badge).
   * Accumulates towards global Tiers (Trooper, Ranger, Champion, Legend).
   * Does NOT contribute towards Facilitator milestone progress bars or participant event milestone bonus bonuses.
@@ -148,16 +148,18 @@ The application provides two distinct operational interfaces tailored for facili
 
 ### 1. Facilitator Mode (Leaderboard & Group Operations)
 * Targeted at program coordinators and facilitators managing a cohort.
-* Features CSV ingestion, full participant ranking table, search and filtering, batch synchronization with concurrency limiting, off-screen export generation (16:9 ZIP/PDF slides and long PNG poster), and facilitator milestone progress bars locked to the 29 September cutoff.
+* Features CSV ingestion, full participant ranking table, search and filtering, batch synchronization with concurrency limiting, off-screen export generation (16:9 ZIP/PDF slides and long PNG poster), and facilitator milestone progress bars locked to the 29 September 10:30 WIB cutoff.
 
 ### 2. Participant Mode (Personal Progress Tracker)
-* Dedicated progress tracker for individual participants accessed via their Google Skills public profile URL.
-* Prevents confusion by removing leaderboard and ranking comparisons.
+* Dedicated progress tracker for individual participants accessed via their Google Skills public profile URL or deep link query parameters (`?url=` or `?profile=`).
+* Operates in real-time both before and after the event cutoff:
+  * Prior to Cutoff (Active Event): Card 1 displays active status, live countdown timer to 29 September 10:30 WIB, and dynamic milestone gap analysis (exact games and skill badges required to reach the next milestone). Card 2 indicates upcoming status.
+  * After Cutoff: Card 1 locks milestone achievements and bonus points permanently; Card 2 activates to tally extended arcade season points.
 * Displays a dedicated three-card breakdown:
-  * Card 1: Official Facilitator Event Milestone (locked to 29 September 2026 cutoff).
-  * Card 2: Extended Arcade Season (active badges earned between 30 September and 31 December 2026).
+  * Card 1: Official Facilitator Event Milestone (locked to 29 September 2026 10:30 WIB cutoff).
+  * Card 2: Extended Arcade Season (badges earned between 29 September 10:30 WIB and 31 December 2026).
   * Card 3: Accumulated Season Score and Tier with dynamic next-tier progression gauge.
-* Includes a three-tab badge audit inspector (Event Badges, Extended Season Badges, Non-Skill / Other Badges).
+* Includes a three-tab badge audit inspector (Event Badges, Extended Season Badges, Non-Skill / Other Badges) and a one-click button to copy shareable progress links.
 
 ---
 

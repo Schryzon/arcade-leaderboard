@@ -70,8 +70,8 @@ Progression rules:
 * **Custom Classifications**: Manual categorization overrides are stored in `arcade_custom_badge_classifications` (`{ badgeTitle: "arcade" | "skill" | "ignored" }`).
 
 ### 3. Dual-Period Classification Engine
-* **Event Cutoff Window**: 13 July 2026, 10:00:00 GMT+7 to 29 September 2026, 23:59:59 GMT+7. Used for calculating player milestone bonus points (Milestone 1/2/3/Ultimate) and Facilitator Milestone cumulative progress bars.
-* **Extended Season Window**: 30 September 2026, 00:00:00 GMT+7 to 31 December 2026, 23:59:59 GMT+7. Badges in this window award direct points and advance participants towards Tiers (★ Trooper, ★★ Ranger, ★★★ Champion, ★★★★ Legend), but do not affect Facilitator milestone bars or participant milestone bonus tiers.
+* **Event Cutoff Window**: 13 July 2026, 10:00:00 GMT+7 to 29 September 2026, 10:30:00 GMT+7 (WIB). Used for calculating player milestone bonus points (Milestone 1/2/3/Ultimate) and Facilitator Milestone cumulative progress bars.
+* **Extended Season Window**: 29 September 2026, 10:30:01 GMT+7 to 31 December 2026, 23:59:59 GMT+7. Badges in this window award direct points and advance participants towards Tiers (★ Trooper, ★★ Ranger, ★★★ Champion, ★★★★ Legend), but do not affect Facilitator milestone bars or participant milestone bonus tiers.
 * **Arcade Games**: The badge's dialog link href contains `/games/`.
 * **Skill Badges**: The badge's dialog description contains `"skill badge"`, `"badge keahlian"`, or `"lencana keahlian"` (case-insensitive).
 * **Completion Badges**: Ignored.
@@ -82,6 +82,6 @@ Progression rules:
 
 ## Dual-Mode Architecture
 
-* **Facilitator Mode**: Full leaderboard view, CSV drag-and-drop ingestion, facilitator milestone dual-quota progress bars (evaluated at 29 September cutoff), live profile batch synchronization, and slide/poster exports.
-* **Participant Mode**: Dedicated Personal Progress Tracker for individual participants via Google Skills URL. Renders a clear 3-card breakdown (Event Milestone locked to 29 September, Extended Season progress for 30 September - 31 December, and Accumulated Score & Prize Tier) along with full badge audit tabs, eliminating leaderboard confusion.
+* **Facilitator Mode**: Full leaderboard view, CSV drag-and-drop ingestion, facilitator milestone dual-quota progress bars (evaluated at 29 September 10:30 WIB cutoff), live profile batch synchronization, and slide/poster exports.
+* **Participant Mode**: Dedicated Personal Progress Tracker for individual participants via Google Skills URL and deep links (`?url=...`). Renders a clear 3-card breakdown (Event Milestone with live countdown & next milestone guidance before 29 September 10:30 WIB, Extended Season progress for 29 September 10:30 WIB - 31 December, and Accumulated Score & Tier) along with full badge audit tabs, eliminating leaderboard confusion.
 

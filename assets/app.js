@@ -125,10 +125,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Program Windows:
-  // 1. Official Facilitator Event Period: 13 July 2026 (10 AM) to 29 September 2026 (23:59:59) GMT+7
-  // 2. Extended Global Arcade Season: 30 September 2026 (00:00:00) to 31 December 2026 (23:59:59) GMT+7
+  // 1. Official Facilitator Event Period: 13 July 2026 (10 AM) to 29 September 2026 (10:30 AM WIB / GMT+7)
+  // 2. Extended Global Arcade Season: 29 September 2026 (10:30:01 WIB) to 31 December 2026 (23:59:59 WIB)
   const PROGRAM_START_DATE = Date.parse('2026-07-13T10:00:00+07:00');
-  const EVENT_CUTOFF_DATE = Date.parse('2026-09-29T23:59:59+07:00');
+  const EVENT_CUTOFF_DATE = Date.parse('2026-09-29T10:30:00+07:00');
   const EXTENDED_SEASON_END_DATE = Date.parse('2026-12-31T23:59:59+07:00');
 
   function getBadgeDateCategory(earned_text) {
@@ -294,8 +294,32 @@ document.addEventListener('DOMContentLoaded', () => {
     playerHasBonusCheckbox.checked = savedPlayerBonus;
   }
 
-  const savedMode = localStorage.getItem('arcade_app_mode') || (savedData ? 'facilitator' : 'player');
-  switchMode(savedMode);
+  // Check URL query parameters for deep linking (?url=... or ?profile=...)
+  const url_params = new URLSearchParams(window.location.search);
+  const param_url = url_params.get('url') || url_params.get('profile');
+  const param_mode = url_params.get('mode');
+  const param_bonus = url_params.get('bonus') === 'true' || url_params.get('bonus') === '1';
+
+  if (param_url) {
+    if (playerUrlInput) playerUrlInput.value = param_url;
+    if (playerHasBonusCheckbox && param_bonus) playerHasBonusCheckbox.checked = true;
+    switchMode('player');
+    handleIndividualLookup();
+  } else if (param_mode === 'player') {
+    switchMode('player');
+    if (savedPlayerUrl && profileCache[savedPlayerUrl]) {
+      renderIndividualScorecard(profileCache[savedPlayerUrl], savedPlayerUrl);
+    }
+  } else if (!savedData) {
+    // For non-facilitator participants visiting directly, default to Player Mode!
+    switchMode('player');
+    if (savedPlayerUrl && profileCache[savedPlayerUrl]) {
+      renderIndividualScorecard(profileCache[savedPlayerUrl], savedPlayerUrl);
+    }
+  } else {
+    const savedMode = localStorage.getItem('arcade_app_mode') || 'facilitator';
+    switchMode(savedMode);
+  }
 
   // Individual lookup event listeners
   if (checkPlayerBtn) {
@@ -669,6 +693,47 @@ document.addEventListener('DOMContentLoaded', () => {
     if (milestone === "Milestone 2") return 18;
     if (milestone === "Milestone 1") return 7;
     return 0;
+  }
+
+  // Next milestone goal helper to give active live guidance to players
+  function getNextMilestoneGoal(games, skills) {
+    if (games < 6 || skills < 14) {
+      return {
+        nextMilestone: "Milestone 1",
+        targetGames: 6,
+        targetSkills: 14,
+        neededGames: Math.max(0, 6 - games),
+        neededSkills: Math.max(0, 14 - skills)
+      };
+    }
+    if (games < 8 || skills < 28) {
+      return {
+        nextMilestone: "Milestone 2",
+        targetGames: 8,
+        targetSkills: 28,
+        neededGames: Math.max(0, 8 - games),
+        neededSkills: Math.max(0, 28 - skills)
+      };
+    }
+    if (games < 10 || skills < 42) {
+      return {
+        nextMilestone: "Milestone 3",
+        targetGames: 10,
+        targetSkills: 42,
+        neededGames: Math.max(0, 10 - games),
+        neededSkills: Math.max(0, 42 - skills)
+      };
+    }
+    if (games < 12 || skills < 56) {
+      return {
+        nextMilestone: "Ultimate Milestone",
+        targetGames: 12,
+        targetSkills: 56,
+        neededGames: Math.max(0, 12 - games),
+        neededSkills: Math.max(0, 56 - skills)
+      };
+    }
+    return null;
   }
 
   // --- Tier Helpers ---
@@ -1975,9 +2040,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let dateTag = '';
       if (b.dateCategory === 'event') {
-        dateTag = '<span class="badge-tag-event" style="margin-left: 6px;">Event (s.d. 29 Sep)</span>';
+        dateTag = '<span class="badge-tag-event" style="margin-left: 6px;">Event (s.d. 29 Sep 10:30 WIB)</span>';
       } else if (b.dateCategory === 'extended') {
-        dateTag = '<span class="badge-tag-extended" style="margin-left: 6px;">Musim Lanjutan (s.d. 31 Des)</span>';
+        dateTag = '<span class="badge-tag-extended" style="margin-left: 6px;">Musim Lanjutan (Pasca 29 Sep 10:30 WIB)</span>';
       }
 
       row.innerHTML = `
@@ -2112,6 +2177,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const extended_badges_count = stats.extendedArcadeCount + stats.extendedSkillsCount;
     const extended_points = stats.extendedArcadeCount + Math.floor(stats.extendedSkillsCount / 2);
 
+    const is_past_cutoff = Date.now() >= EVENT_CUTOFF_DATE;
+    const next_goal = getNextMilestoneGoal(stats.cutoffArcadeCount, stats.cutoffSkillsCount);
+
+    let countdown_str = '';
+    if (!is_past_cutoff) {
+      const remaining_ms = Math.max(0, EVENT_CUTOFF_DATE - Date.now());
+      const remaining_days = Math.floor(remaining_ms / (1000 * 60 * 60 * 24));
+      const remaining_hours = Math.floor((remaining_ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const remaining_mins = Math.floor((remaining_ms % (1000 * 60 * 60)) / (1000 * 60));
+      countdown_str = `${remaining_days} hari ${remaining_hours} jam ${remaining_mins} menit`;
+    }
+
     let html = `
       <div class="player-tracker-hero">
         <div class="player-hero-profile">
@@ -2127,20 +2204,25 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <div class="player-hero-actions">
           ${safe_url ? `<a href="${safe_url}" target="_blank" rel="noopener noreferrer" class="btn" style="padding: 8px 16px; font-size: 0.8rem; background: rgba(0, 243, 255, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan);">Buka Profil Skills</a>` : ''}
+          <button type="button" class="btn" id="player-share-btn" style="padding: 8px 16px; font-size: 0.8rem; background: rgba(57, 255, 20, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green);">Salin Link Progres</button>
           <button type="button" class="btn" id="player-refresh-btn" style="padding: 8px 16px; font-size: 0.8rem;">Segarkan Data</button>
           <button type="button" class="btn btn-secondary" id="player-change-btn" style="padding: 8px 16px; font-size: 0.8rem;">Ganti Akun</button>
         </div>
       </div>
 
       <div class="player-cards-grid">
-        <!-- Card 1: Event Milestone Status (Cutoff 29 Sep 2026) -->
+        <!-- Card 1: Event Milestone Status (Cutoff 29 Sep 2026 10:30 WIB) -->
         <div class="player-card event-card">
           <div class="player-card-header">
             <div>
               <div class="player-card-title" style="color: var(--accent-gold);">Milestone Event Fasilitator</div>
-              <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Batas Akhir: 29 September 2026</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Batas Akhir: 29 September 2026, 10:30 WIB</div>
             </div>
-            <span class="pill-tag locked">Terkunci (Final)</span>
+            ${is_past_cutoff ? `
+              <span class="pill-tag locked">Terkunci (Final)</span>
+            ` : `
+              <span class="pill-tag ongoing" style="background: rgba(255, 184, 0, 0.2); border: 1px solid var(--accent-gold); color: var(--accent-gold); font-weight: 700;">Sedang Berlangsung</span>
+            `}
           </div>
           <div>
             <div class="milestone-badge ${milestone_class}" style="font-size: 0.9rem; padding: 6px 14px; display: inline-block;">
@@ -2153,34 +2235,69 @@ document.addEventListener('DOMContentLoaded', () => {
               Bonus Poin Milestone: <strong>+${stats.milestoneBonus} Poin</strong>
               ${stats.hasBonus ? ` &nbsp;|&nbsp; Bonus GEAR: <strong>+10 Poin</strong>` : ''}
             </div>
+            ${!is_past_cutoff ? (next_goal ? `
+              <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 8px; padding: 6px 10px; background: rgba(0, 243, 255, 0.05); border-left: 3px solid var(--accent-cyan); border-radius: 4px;">
+                🎯 Target Berikutnya (<strong>${next_goal.nextMilestone}</strong>): Butuh <strong>${next_goal.neededGames} Game</strong> & <strong>${next_goal.neededSkills} Skill Badge</strong> lagi.
+              </div>
+            ` : `
+              <div style="font-size: 0.78rem; color: var(--accent-green); margin-top: 8px; padding: 6px 10px; background: rgba(57, 255, 20, 0.05); border-left: 3px solid var(--accent-green); border-radius: 4px;">
+                🎉 Luar biasa! Anda telah mencapai <strong>Ultimate Milestone</strong> (Level Tertinggi)!
+              </div>
+            `) : ''}
+            ${!is_past_cutoff ? `
+              <div style="font-size: 0.76rem; color: var(--accent-gold); margin-top: 8px; font-family: var(--font-stats);">
+                ⏳ Sisa Waktu Event: <strong>${countdown_str}</strong>
+              </div>
+            ` : ''}
           </div>
           <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
-            Program fasilitator Indonesia telah berakhir pada 29 September 2026 (23:59 GMT+7). Milestone dan bonus poin ini bersifat resmi dan tidak berubah.
+            ${is_past_cutoff ? `
+              Program fasilitator Indonesia telah berakhir pada 29 September 2026 pukul 10:30 WIB. Milestone dan bonus poin ini bersifat resmi dan final.
+            ` : `
+              Event sedang aktif! Kumpulkan game dan skill badge sebelum 29 September 2026 pukul 10:30 WIB untuk mengklaim milestone event fasilitator Anda.
+            `}
           </p>
         </div>
 
-        <!-- Card 2: Extended Arcade Season (30 Sep - 31 Des 2026) -->
+        <!-- Card 2: Extended Arcade Season (29 Sep 10:30 WIB - 31 Des 2026) -->
         <div class="player-card extended-card">
           <div class="player-card-header">
             <div>
               <div class="player-card-title" style="color: var(--accent-cyan);">Musim Lanjutan Arcade</div>
-              <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Periode: 30 Sep - 31 Des 2026</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Periode: 29 Sep 10:30 WIB - 31 Des 2026</div>
             </div>
-            <span class="pill-tag active-season">Aktif</span>
+            ${is_past_cutoff ? `
+              <span class="pill-tag active-season">Aktif</span>
+            ` : `
+              <span class="pill-tag" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: var(--text-muted);">Mulai 29 Sep 10:30 WIB</span>
+            `}
           </div>
           <div>
-            <div class="player-stat-big" style="color: var(--accent-cyan);">
-              +${extended_badges_count} <span style="font-size: 1rem; font-weight: 500; color: var(--text-secondary);">Lencana Baru</span>
-            </div>
-            <div style="font-size: 0.82rem; color: var(--text-primary); margin-top: 8px; font-family: var(--font-stats);">
-              +🎮 ${stats.extendedArcadeCount} Arcade Games &nbsp;|&nbsp; +🏆 ${stats.extendedSkillsCount} Skill Badges
-            </div>
-            <div style="font-size: 0.78rem; color: var(--accent-cyan); margin-top: 4px;">
-              Poin Tambahan Musim Lanjutan: <strong>+${extended_points} Poin</strong>
-            </div>
+            ${is_past_cutoff ? `
+              <div class="player-stat-big" style="color: var(--accent-cyan);">
+                +${extended_badges_count} <span style="font-size: 1rem; font-weight: 500; color: var(--text-secondary);">Lencana Baru</span>
+              </div>
+              <div style="font-size: 0.82rem; color: var(--text-primary); margin-top: 8px; font-family: var(--font-stats);">
+                +🎮 ${stats.extendedArcadeCount} Arcade Games &nbsp;|&nbsp; +🏆 ${stats.extendedSkillsCount} Skill Badges
+              </div>
+              <div style="font-size: 0.78rem; color: var(--accent-cyan); margin-top: 4px;">
+                Poin Tambahan Musim Lanjutan: <strong>+${extended_points} Poin</strong>
+              </div>
+            ` : `
+              <div class="player-stat-big" style="color: var(--text-muted); font-size: 1.25rem;">
+                Akan Datang
+              </div>
+              <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px; line-height: 1.4;">
+                Seluruh lencana saat ini dihitung ke Event Fasilitator di sebelah kiri.
+              </div>
+            `}
           </div>
           <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
-            Lencana setelah 29 September tetap dihitung ke akumulasi poin musim global Arcade dan membantu Anda membuka Tier!
+            ${is_past_cutoff ? `
+              Lencana setelah 29 September 10:30 WIB tetap dihitung ke akumulasi poin musim global Arcade dan membantu Anda membuka Tier!
+            ` : `
+              Setelah batas akhir 29 September 10:30 WIB, lencana baru yang Anda raih otomatis dihitung ke Musim Lanjutan ini untuk terus mengejar Tier hadiah global Arcade.
+            `}
           </p>
         </div>
 
@@ -2221,10 +2338,10 @@ document.addEventListener('DOMContentLoaded', () => {
         </h4>
         <div class="badge-audit-tabs">
           <button type="button" class="audit-tab-btn active" data-tab="event">
-            Lencana Event (s.d. 29 Sep) [${event_badges_count}]
+            Lencana Event (s.d. 29 Sep 10:30 WIB) [${event_badges_count}]
           </button>
           <button type="button" class="audit-tab-btn" data-tab="extended">
-            Musim Lanjutan (30 Sep - 31 Des) [${extended_badges_count}]
+            Musim Lanjutan (Pasca 29 Sep 10:30 WIB) [${extended_badges_count}]
           </button>
           <button type="button" class="audit-tab-btn" data-tab="other">
             Lainnya / Non-Skill [${stats.allBadgesAudit.length - (event_badges_count + extended_badges_count)}]
@@ -2238,6 +2355,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     individualTrackerSection.innerHTML = html;
     individualTrackerSection.style.display = 'flex';
+
+    // Hook up share button
+    const shareBtn = document.getElementById('player-share-btn');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', async () => {
+        const shareUrl = `${window.location.origin}${window.location.pathname}?mode=player&url=${encodeURIComponent(url)}${stats.hasBonus ? '&bonus=true' : ''}`;
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(shareUrl);
+          } else {
+            const dummy = document.createElement('input');
+            document.body.appendChild(dummy);
+            dummy.value = shareUrl;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+          }
+          const origText = shareBtn.textContent;
+          shareBtn.textContent = 'Link Tersalin!';
+          setTimeout(() => { shareBtn.textContent = origText; }, 2000);
+        } catch (e) {
+          prompt('Salin tautan progres ini:', shareUrl);
+        }
+      });
+    }
 
     // Hook up action buttons inside rendered section
     const refreshBtn = document.getElementById('player-refresh-btn');
